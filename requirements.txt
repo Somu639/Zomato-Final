@@ -1,2 +1,2 @@
-# Production API (Render) and local install
+# Production API (Railway) and local install
 -e .

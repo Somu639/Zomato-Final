@@ -2,7 +2,7 @@
 
 Zomato-inspired recommendation service combining structured restaurant data with an LLM.
 
-**Current status:** Phases **0–6** implemented locally; **Phase 7** production deploy on **Render** (API) + **Vercel** (Next.js UI).
+**Current status:** Phases **0–6** implemented locally; **Phase 7** production deploy on **Railway** (API) + **Vercel** (Next.js UI).
 
 **Input channel:** Next.js frontend → FastAPI backend. The `zm` CLI is for developers only.
 
@@ -46,13 +46,13 @@ npm run dev     # http://localhost:3000/
 
 OpenAPI: http://127.0.0.1:8000/docs
 
-### Production deployment (Render + Vercel)
+### Production deployment (Railway + Vercel)
 
-Step-by-step guide: **[Docs/Deployment-Render-Vercel.md](Docs/Deployment-Render-Vercel.md)**
+Step-by-step guide: **[Docs/Deployment-Railway-Vercel.md](Docs/Deployment-Railway-Vercel.md)**
 
 | Service | Platform | Config |
 |---------|----------|--------|
-| Backend | [Render](https://render.com) | `render.yaml`, root `requirements.txt` |
+| Backend | [Railway](https://railway.com) | `railway.toml`, `Procfile`, `requirements.txt` |
 | Frontend | [Vercel](https://vercel.com) | Root dir `frontend/`, `NEXT_PUBLIC_API_BASE_URL` |
 
 ### Docker (local / optional)
@@ -71,10 +71,10 @@ zm serve        # http://127.0.0.1:8000/ — interim monolithic UI
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `GROQ_API_KEY` | For AI (Render/local) | — | Groq API key |
+| `GROQ_API_KEY` | For AI (Railway/local) | — | Groq API key |
 | `GROQ_MODEL` | No | `llama-3.3-70b-versatile` | Groq model |
-| `CORS_ORIGINS` | Render prod | `http://localhost:3000,...` | Include your Vercel URL |
-| `NEXT_PUBLIC_API_BASE_URL` | Vercel prod | — | Render API URL (see `frontend/.env.example`) |
+| `CORS_ORIGINS` | Railway prod | `http://localhost:3000,...` | Include your Vercel URL |
+| `NEXT_PUBLIC_API_BASE_URL` | Vercel prod | — | Railway API URL (see `frontend/.env.example`) |
 | `DATASET_CACHE_DIR` | No | `data/cache` | Restaurant cache |
 | `WEB_HOST` / `WEB_PORT` | No | `127.0.0.1` / `8000` | Local API bind |
 
@@ -83,17 +83,18 @@ See [.env.example](.env.example) for the full list.
 ## Project layout
 
 ```
-backend/             # FastAPI REST API (Render)
+backend/             # FastAPI REST API (Railway)
 frontend/            # Next.js App Router (Vercel)
-render.yaml          # Render Blueprint
-requirements.txt     # Python deps for Render
+railway.toml         # Railway config
+Procfile             # Railway / Nixpacks start command
+requirements.txt     # Python deps for Railway
 src/zm/              # Core library (Phases 0–4)
 Docs/                # Architecture + deployment guides
 ```
 
 ## Documentation
 
-- [Deployment: Render + Vercel](Docs/Deployment-Render-Vercel.md)
+- [Deployment: Railway + Vercel](Docs/Deployment-Railway-Vercel.md)
 - [Phase-wise architecture](Docs/PhaseWiseArchitecture.md)
 - [Problem statement](Docs/Problemstatement1.md)
 - [Edge cases](Docs/EdgeCases.md)

@@ -53,7 +53,7 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    if settings.is_render:
+    if settings.is_cloud_deploy:
         app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
     app.add_middleware(
@@ -84,7 +84,7 @@ def _register_not_found_handler(app: FastAPI) -> None:
         path = request.url.path
         hint = (
             "Use the REST API at /api/v1/... (see /docs). "
-            "On Render, use start command: "
+            "On Railway, use start command: "
             "uvicorn backend.main:create_app --factory --host 0.0.0.0 --port $PORT"
         )
         if path.startswith("/api/v1"):
@@ -116,8 +116,8 @@ def run_server() -> None:
         host=settings.web_host,
         port=settings.web_port,
         log_level=settings.log_level.lower(),
-        proxy_headers=settings.is_render,
-        forwarded_allow_ips="*" if settings.is_render else None,
+        proxy_headers=settings.is_cloud_deploy,
+        forwarded_allow_ips="*" if settings.is_cloud_deploy else None,
     )
 
 

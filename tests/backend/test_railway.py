@@ -1,4 +1,4 @@
-"""Render / production deployment settings (Phase 7)."""
+"""Railway / production deployment settings (Phase 7)."""
 
 import pytest
 from fastapi.testclient import TestClient
@@ -11,8 +11,8 @@ from zm.models.enums import PriceBand
 
 
 @pytest.fixture
-def render_client(monkeypatch):
-    monkeypatch.setenv("RENDER", "true")
+def railway_client(monkeypatch):
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT", "production")
     clear_settings_cache()
     repo = RestaurantRepository(
         [
@@ -31,7 +31,7 @@ def render_client(monkeypatch):
         yield client
 
 
-def test_health_on_render(render_client: TestClient):
-    response = render_client.get("/health")
+def test_health_on_railway(railway_client: TestClient):
+    response = railway_client.get("/health")
     assert response.status_code == 200
     assert response.json()["data_loaded"] is True

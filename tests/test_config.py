@@ -52,8 +52,9 @@ def test_port_env_overrides_web_port(monkeypatch):
     assert settings.web_port == 10000
 
 
-def test_render_detection(monkeypatch):
-    monkeypatch.setenv("RENDER", "true")
+def test_railway_detection(monkeypatch):
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT", "production")
     clear_settings_cache()
     settings = Settings()
-    assert settings.is_render is True
+    assert settings.is_railway is True
+    assert settings.is_cloud_deploy is True

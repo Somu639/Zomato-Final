@@ -6,7 +6,7 @@ import type {
   RecommendationResponse,
 } from "./types";
 
-/** Strip trailing slashes and accidental `/api` suffix (common Render misconfig). */
+/** Strip trailing slashes and accidental `/api` suffix (common misconfig). */
 function normalizeApiBase(raw: string): string {
   let base = raw.trim();
   while (base.endsWith("/")) {

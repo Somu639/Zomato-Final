@@ -1,4 +1,4 @@
-"""Tests for Render-safe data loading."""
+"""Tests for cloud-safe data loading."""
 
 import pytest
 from fastapi.testclient import TestClient
@@ -11,7 +11,7 @@ from zm.data.repository import get_repository_holder
 @pytest.fixture
 def empty_client(monkeypatch, tmp_path):
     monkeypatch.setenv("DATASET_CACHE_DIR", str(tmp_path / "empty_cache"))
-    monkeypatch.setenv("RENDER", "true")
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT", "production")
     clear_settings_cache()
     holder = get_repository_holder()
     with holder._lock:

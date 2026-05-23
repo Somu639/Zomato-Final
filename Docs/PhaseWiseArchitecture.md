@@ -1,6 +1,6 @@
 # Phase-Wise Architecture: AI-Powered Restaurant Recommendation System
 
-This document defines a phased architecture for the system described in [Problemstatement1.md](./Problemstatement1.md). Phases **0–4** are implemented in the Python core (`src/zm/`). **Phase 5** introduces a **backend + frontend** split; **Phase 6** adds production hardening; **Phase 7** is **cloud deployment** on **Render** (API) and **Vercel** (Next.js UI).
+This document defines a phased architecture for the system described in [Problemstatement1.md](./Problemstatement1.md). Phases **0–4** are implemented in the Python core (`src/zm/`). **Phase 5** introduces a **backend + frontend** split; **Phase 6** adds production hardening; **Phase 7** is **cloud deployment** on **Railway** (API) and **Vercel** (Next.js UI).
 
 ---
 
@@ -117,7 +117,7 @@ flowchart LR
 | 5a | Backend API | REST API orchestrating core | Phases 1–4 |
 | 5b | Frontend | SPA consuming REST API | Phase 5a |
 | 6 | Hardening (optional) | Docker, cache, observability | Phases 1–5 |
-| 7 | Cloud deployment | Render (API) + Vercel (frontend) | Phases 5a, 5b, 6 |
+| 7 | Cloud deployment | Railway (API) + Vercel (frontend) | Phases 5a, 5b, 6 |
 
 **Current implementation status**
 
@@ -127,7 +127,7 @@ flowchart LR
 | 5a | Implemented | `backend/` — FastAPI REST API |
 | 5b | Implemented | `frontend/` — Next.js (Vercel) |
 | 6 | Implemented | Docker Compose, cache, rate limits, observability, INR budget |
-| 7 | Implemented | [Deployment-Render-Vercel.md](./Deployment-Render-Vercel.md), `render.yaml`, `backend/startup.py` |
+| 7 | Implemented | [Deployment-Railway-Vercel.md](./Deployment-Railway-Vercel.md), `railway.toml`, `backend/startup.py` |
 | 5 (interim / legacy) | Available | `src/zm/web/` (monolithic FastAPI + Jinja, `zm serve`) |
 
 ---
@@ -505,11 +505,11 @@ This monolith **implements the same orchestration** as the target backend but mi
 
 ---
 
-## Phase 7: Cloud deployment (Render + Vercel)
+## Phase 7: Cloud deployment (Railway + Vercel)
 
-**Goal:** Host the production stack as two managed services: **FastAPI on Render**, **Next.js on Vercel**. No Streamlit in the deployment path.
+**Goal:** Host the production stack as two managed services: **FastAPI on Railway**, **Next.js on Vercel**. No Streamlit in the deployment path.
 
-**Full runbook:** [Deployment-Render-Vercel.md](./Deployment-Render-Vercel.md)
+**Full runbook:** [Deployment-Railway-Vercel.md](./Deployment-Railway-Vercel.md)
 
 ### Architecture
 
@@ -517,27 +517,29 @@ This monolith **implements the same orchestration** as the target backend but mi
 flowchart LR
     User[User]
     Vercel[Vercel — Next.js]
-    Render[Render — FastAPI]
+    Railway[Railway — FastAPI]
     Groq[Groq]
     HF[Hugging Face]
 
     User --> Vercel
-    Vercel -->|HTTPS /api/v1| Render
-    Render --> Groq
-    Render --> HF
+    Vercel -->|HTTPS /api/v1| Railway
+    Railway --> Groq
+    Railway --> HF
 ```
 
 | Service | Platform | Repo path | Start / build |
 |---------|----------|-----------|----------------|
-| **Backend** | Render Web Service | repo root | Build: `pip install -e . && zm load-data` · Start: `uvicorn backend.main:create_app --factory --host 0.0.0.0 --port $PORT` |
+| **Backend** | Railway | repo root | Build: `pip install -e .` · Start: `uvicorn backend.main:create_app --factory --host 0.0.0.0 --port $PORT` |
 | **Frontend** | Vercel | `frontend/` | `npm run build` · env: `NEXT_PUBLIC_API_BASE_URL` |
 
 ### Repo artifacts
 
 | File | Purpose |
 |------|---------|
-| `render.yaml` | Optional Render Blueprint |
-| `requirements.txt` | Python deps for Render (`-e .`) |
+| `railway.toml` | Railway config-as-code |
+| `Procfile` | Start command for Nixpacks |
+| `nixpacks.toml` | Python 3.11 + install steps |
+| `requirements.txt` | Python deps for Railway (`-e .`) |
 | `frontend/vercel.json` | Vercel project hints |
 | `frontend/.env.example` | `NEXT_PUBLIC_API_BASE_URL` template |
 
@@ -545,13 +547,13 @@ flowchart LR
 
 | Secret | Where |
 |--------|--------|
-| `GROQ_API_KEY` | Render only |
-| `CORS_ORIGINS` | Render (Vercel production URL) |
-| `NEXT_PUBLIC_API_BASE_URL` | Vercel (Render API URL) |
+| `GROQ_API_KEY` | Railway only |
+| `CORS_ORIGINS` | Railway (Vercel production URL) |
+| `NEXT_PUBLIC_API_BASE_URL` | Vercel (Railway API URL) |
 
 ### Exit criteria
 
-- Vercel UI loads cities from Render `/api/v1/locations`
+- Vercel UI loads cities from Railway `/api/v1/locations`
 - Full recommend flow works with CORS configured
 - `GROQ_API_KEY` never present in frontend bundle or Vercel env
 
@@ -586,6 +588,9 @@ sequenceDiagram
 
 ```
 ZM/
+├── railway.toml             # Phase 7 — Railway config
+├── Procfile                 # Phase 7 — Railway start command
+├── requirements.txt         # Railway pip install
 ├── backend/                 # Phase 5a — FastAPI REST API
 │   ├── main.py
 │   ├── api/
@@ -593,8 +598,7 @@ ZM/
 ├── frontend/                # Phase 5b / 6 — Next.js UI
 │   ├── app/
 │   └── package.json
-├── render.yaml              # Phase 7 — Render Blueprint (optional)
-├── requirements.txt         # Render pip install
+├── nixpacks.toml            # Phase 7 — Nixpacks (Python 3.11)
 ├── src/zm/                  # Phases 0–4 core (library)
 │   ├── config/
 │   ├── models/
@@ -624,7 +628,7 @@ flowchart TD
     P5A[Phase 5a: Backend API]
     P5B[Phase 5b: Frontend]
     P6[Phase 6: Hardening]
-    P7[Phase 7: Render + Vercel]
+    P7[Phase 7: Railway + Vercel]
 
     P0 --> P1
     P0 --> P2
@@ -654,7 +658,7 @@ Phases **5a** and **5b** can be developed in parallel once OpenAPI contract is a
 | Integration layer | Phase 3 |
 | Recommendation engine | Phase 4 (Groq) |
 | Output display | Phase 5a (API) + Phase 5b (UI) |
-| Deployment (production) | Phase 7 (Render + Vercel) |
+| Deployment (production) | Phase 7 (Railway + Vercel) |
 
 ---
 
@@ -664,7 +668,7 @@ Phases **5a** and **5b** can be developed in parallel once OpenAPI contract is a
 |-------|--------|-------|
 | **Current MVP** | 0–4 + interim web | Python `zm`, FastAPI + Jinja in `src/zm/web/` |
 | **Target product** | 0–5b | `src/zm` core + `backend/` (FastAPI) + `frontend/` (Next.js) |
-| **Production** | 0–7 | Next.js on Vercel + FastAPI on Render (+ Phase 6 hardening) |
+| **Production** | 0–7 | Next.js on Vercel + FastAPI on Railway (+ Phase 6 hardening) |
 | **Local Docker** | 0–6 | `docker compose up` (API + web) |
 
 ---
@@ -676,14 +680,14 @@ Phases **5a** and **5b** can be developed in parallel once OpenAPI contract is a
 3. Build React app calling the same JSON shape already used by `POST /api/preferences`.
 4. Keep `zm serve` as alias to backend only, or run `uvicorn backend.main:app` + `npm run dev` in frontend.
 5. Remove Jinja templates once frontend reaches exit criteria.
-6. Deploy Phase 7 per [Deployment-Render-Vercel.md](./Deployment-Render-Vercel.md).
+6. Deploy Phase 7 per [Deployment-Railway-Vercel.md](./Deployment-Railway-Vercel.md).
 
-This architecture keeps structured filtering and Groq in the Python core, with a clear boundary: **frontend (Vercel) = UX**, **backend (Render) = HTTP + orchestration**, **zm = domain logic**.
+This architecture keeps structured filtering and Groq in the Python core, with a clear boundary: **frontend (Vercel) = UX**, **backend (Railway) = HTTP + orchestration**, **zm = domain logic**.
 
 ---
 
 ## Related documentation
 
-- [Deployment-Render-Vercel.md](./Deployment-Render-Vercel.md) — Render + Vercel deployment plan
+- [Deployment-Railway-Vercel.md](./Deployment-Railway-Vercel.md) — Railway + Vercel deployment plan
 - [GoogleStitch-UI-Prompt.md](./GoogleStitch-UI-Prompt.md) — copy-paste prompt for Google Stitch to generate the **Next.js** frontend UI
 - [EdgeCases.md](./EdgeCases.md)

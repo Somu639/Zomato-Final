@@ -54,9 +54,9 @@ class Settings(BaseSettings):
         le=65535,
         validation_alias=AliasChoices("PORT", "WEB_PORT"),
     )
-    render: bool = Field(
-        default=False,
-        validation_alias=AliasChoices("RENDER", "IS_RENDER"),
+    railway_environment: str | None = Field(
+        default=None,
+        validation_alias="RAILWAY_ENVIRONMENT",
     )
     cors_origins: str = Field(
         default=(
@@ -84,9 +84,14 @@ class Settings(BaseSettings):
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
     @property
-    def is_render(self) -> bool:
-        """True when running on Render (``RENDER=true`` is set automatically)."""
-        return self.render
+    def is_railway(self) -> bool:
+        """True when running on Railway (``RAILWAY_ENVIRONMENT`` is set automatically)."""
+        return bool(self.railway_environment and self.railway_environment.strip())
+
+    @property
+    def is_cloud_deploy(self) -> bool:
+        """True on managed cloud hosts (Railway) — proxy headers, background data load."""
+        return self.is_railway
 
     @property
     def has_only_local_cors_origins(self) -> bool:
@@ -155,7 +160,7 @@ class Settings(BaseSettings):
             "log_level": self.log_level,
             "web_host": self.web_host,
             "web_port": self.web_port,
-            "is_render": self.is_render,
+            "is_railway": self.is_railway,
             "cors_origins": self.cors_origins_list,
             "recommendation_cache_ttl_seconds": (
                 self.recommendation_cache_ttl_seconds

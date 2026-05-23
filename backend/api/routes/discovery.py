@@ -1,4 +1,4 @@
-"""API discovery routes — avoid bare 404 on common paths (Render / ops)."""
+"""API discovery routes — avoid bare 404 on common paths (ops)."""
 
 from __future__ import annotations
 

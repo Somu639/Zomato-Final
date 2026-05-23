@@ -1,4 +1,4 @@
-"""Restaurant data loading for API startup (Phase 7 — Render-safe)."""
+"""Restaurant data loading for API startup (Phase 7 — cloud-safe)."""
 
 from __future__ import annotations
 
@@ -61,7 +61,7 @@ def load_repository_full(settings: Settings | None = None) -> RestaurantReposito
 
 
 def prefetch_repository_in_background(settings: Settings | None = None) -> None:
-    """Start a one-time background download/build (Render deploy must not block)."""
+    """Start a one-time background download/build (cloud deploy must not block)."""
     global _prefetch_started
     settings = settings or get_settings()
 

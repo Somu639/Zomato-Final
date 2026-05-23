@@ -76,8 +76,8 @@ def cmd_check() -> int:
     print("  `zm api` — REST backend (Phase 5a)")
     print("  `zm serve` — interim Jinja UI (legacy)")
     print("  Frontend: `cd frontend && npm run dev` (Next.js, :3000)")
-    print("  Deploy: Render (API) + Vercel (UI) — see Docs/Deployment-Render-Vercel.md")
-    print("Input channel: Next.js on Vercel → FastAPI on Render (CLI is dev-only)")
+    print("  Deploy: Railway (API) + Vercel (UI) — see Docs/Deployment-Railway-Vercel.md")
+    print("Input channel: Next.js on Vercel → FastAPI on Railway (CLI is dev-only)")
 
     from zm.data.cache import cache_paths, load_cache
 
@@ -309,15 +309,15 @@ def cmd_api() -> int:
 
 
 def cmd_serve() -> int:
-    """Start web server — REST API on Render; legacy Jinja UI locally."""
+    """Start web server — REST API on Railway; legacy Jinja UI locally."""
     settings = get_settings()
-    if settings.is_render:
+    if settings.is_railway:
         print(
-            "Render detected: starting REST API (backend.main), not legacy Jinja UI.",
+            "Railway detected: starting REST API (backend.main), not legacy Jinja UI.",
             file=sys.stderr,
         )
         print(
-            "Preferred start: bash scripts/render_start.sh",
+            "Preferred start: see railway.toml / Procfile",
             file=sys.stderr,
         )
         return cmd_api()
@@ -336,7 +336,7 @@ def cmd_serve() -> int:
     print(
         f"Starting legacy web UI at http://{settings.web_host}:{settings.web_port}/"
     )
-    print("Production API: use `zm api` or scripts/render_start.sh", file=sys.stderr)
+    print("Production API: use `zm api` or Railway Procfile", file=sys.stderr)
     run_server(settings)
     return 0
 

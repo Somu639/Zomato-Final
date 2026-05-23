@@ -1,4 +1,4 @@
-"""Application startup helpers (Phase 7 — Render / production)."""
+"""Application startup helpers (Phase 7 — Railway / production)."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ def bootstrap_repository(settings: Settings | None = None) -> int | None:
     """
     Fast startup: load cache if present; never block on Hugging Face download.
 
-    On Render, dataset download runs in a background thread after the server
+    On Railway, dataset download runs in a background thread after the server
     binds to PORT so deploy health checks pass quickly.
     """
     settings = settings or get_settings()
@@ -25,7 +25,7 @@ def bootstrap_repository(settings: Settings | None = None) -> int | None:
     if repo is not None:
         return repo.count()
 
-    if settings.is_render:
+    if settings.is_cloud_deploy:
         prefetch_repository_in_background(settings)
         logger.info(
             "No local cache yet; API will serve /health immediately "
@@ -40,15 +40,15 @@ def bootstrap_repository(settings: Settings | None = None) -> int | None:
 
 
 def log_deployment_context(settings: Settings) -> None:
-    """Log non-secret settings useful on Render deploys."""
+    """Log non-secret settings useful on cloud deploys."""
     summary = settings.redacted_summary()
     logger.info("Deployment context: %s", summary)
-    if settings.is_render and not settings.cors_origins_list:
+    if settings.is_railway and not settings.cors_origins_list:
         logger.warning(
-            "CORS_ORIGINS is empty on Render — set your Vercel URL "
-            "(see Docs/Deployment-Render-Vercel.md)"
+            "CORS_ORIGINS is empty on Railway — set your Vercel URL "
+            "(see Docs/Deployment-Railway-Vercel.md)"
         )
-    if settings.is_render and settings.has_only_local_cors_origins:
+    if settings.is_railway and settings.has_only_local_cors_origins:
         logger.warning(
             "CORS_ORIGINS still lists only localhost — add your Vercel "
             "production URL before going live"
