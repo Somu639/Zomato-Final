@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "zm-recommend"
+version = "0.1.0"
+description = "AI-powered restaurant recommendation system (Zomato use case)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.7,<3",
+    "pydantic-settings>=2.3,<3",
+    "huggingface_hub>=0.23,<1",
+    "fastapi>=0.111,<1",
+    "uvicorn[standard]>=0.30,<1",
+    "python-multipart>=0.0.9,<1",
+    "jinja2>=3.1,<4",
+    "groq>=0.11,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2,<9",
+    "pytest-cov>=5.0,<6",
+    "httpx>=0.27,<1",
+]
+streamlit = [
+    "streamlit>=1.39,<2",
+]
+
+[project.scripts]
+zm = "zm.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/zm"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "."]
+addopts = "-m 'not integration'"
+markers = [
+    "integration: live Hugging Face download (slow)",
+]
+
+[tool.coverage.run]
+source = ["zm"]

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} — ZM</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="container">
+    <header>
+      <h1>{{ title }}</h1>
+      <p class="subtitle">Tell us what you're looking for. We'll recommend restaurants that match.</p>
+    </header>
+
+    {% if load_error %}
+    <div class="alert alert-warning" role="alert">
+      {{ load_error }}
+    </div>
+    {% endif %}
+
+    {% if errors._form %}
+    <div class="alert alert-warning" role="alert">
+      {{ errors._form }}
+    </div>
+    {% endif %}
+
+    {% if success %}
+    <div class="alert alert-success" role="status">
+      <p>{{ success }}</p>
+      {% if preferences %}
+      <dl class="pref-summary">
+        <dt>Location</dt><dd>{{ preferences.location }}</dd>
+        <dt>Budget</dt><dd>{{ preferences.budget }}</dd>
+        <dt>Cuisines</dt><dd>{{ preferences.cuisines | join(', ') }}</dd>
+        <dt>Min rating</dt><dd>{{ preferences.min_rating }}</dd>
+        {% if preferences.additional %}
+        <dt>Additional</dt><dd>{{ preferences.additional }}</dd>
+        {% endif %}
+      </dl>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if recommendations %}
+    <section class="results">
+      <h2>Recommendations</h2>
+      {% if recommendations.warning %}
+      <div class="alert alert-warning" role="alert">{{ recommendations.warning }}</div>
+      {% endif %}
+      {% if recommendations.summary %}
+      <p class="results-summary">{{ recommendations.summary }}</p>
+      {% endif %}
+      <ol class="result-cards">
+        {% for item in recommendations.recommendations %}
+        <li class="result-card">
+          <div class="result-rank">#{{ item.rank }}</div>
+          <div class="result-body">
+            <h3>{{ item.name }}</h3>
+            <p class="result-meta">
+              {{ item.cuisines | join(', ') }}
+              {% if item.rating %} · {{ item.rating }}★{% endif %}
+              · {{ item.estimated_cost }}
+            </p>
+            <p class="result-explanation">{{ item.explanation }}</p>
+          </div>
+        </li>
+        {% endfor %}
+      </ol>
+      <p class="hint">Ranked by {{ recommendations.source }}.</p>
+    </section>
+    {% endif %}
+
+    <form method="post" action="/recommendations" class="pref-form" novalidate>
+      <div class="field {% if errors.location %}field-error{% endif %}">
+        <label for="location">Location <span class="req">*</span></label>
+        {% if locations %}
+        <select id="location" name="location" required>
+          <option value="">Select a city</option>
+          {% for loc in locations %}
+          <option value="{{ loc }}" {% if form.location == loc %}selected{% endif %}>{{ loc }}</option>
+          {% endfor %}
+        </select>
+        {% else %}
+        <input type="text" id="location" name="location" value="{{ form.location or '' }}"
+               placeholder="e.g. Bangalore" required {% if not data_ready %}disabled{% endif %}>
+        {% endif %}
+        {% if errors.location %}<p class="error-text">{{ errors.location }}</p>{% endif %}
+      </div>
+
+      <div class="field {% if errors.budget %}field-error{% endif %}">
+        <label for="budget">Budget <span class="req">*</span></label>
+        <select id="budget" name="budget" required {% if not data_ready %}disabled{% endif %}>
+          <option value="">Select budget</option>
+          {% for b in budgets %}
+          <option value="{{ b }}" {% if form.budget == b %}selected{% endif %}>{{ b | title }}</option>
+          {% endfor %}
+        </select>
+        {% if errors.budget %}<p class="error-text">{{ errors.budget }}</p>{% endif %}
+      </div>
+
+      <div class="field {% if errors.cuisines %}field-error{% endif %}">
+        <label for="cuisines">Cuisine(s) <span class="req">*</span></label>
+        <input type="text" id="cuisines" name="cuisines" value="{{ form.cuisines or '' }}"
+               placeholder="Italian, Chinese" required {% if not data_ready %}disabled{% endif %}>
+        <p class="hint">Comma-separated for multiple cuisines</p>
+        {% if errors.cuisines %}<p class="error-text">{{ errors.cuisines }}</p>{% endif %}
+      </div>
+
+      <div class="field {% if errors.min_rating %}field-error{% endif %}">
+        <label for="min_rating">Minimum rating</label>
+        <input type="number" id="min_rating" name="min_rating" min="0" max="5" step="0.1"
+               value="{{ form.min_rating if form.min_rating is defined else '0' }}"
+               {% if not data_ready %}disabled{% endif %}>
+        {% if errors.min_rating %}<p class="error-text">{{ errors.min_rating }}</p>{% endif %}
+      </div>
+
+      <div class="field {% if errors.additional %}field-error{% endif %}">
+        <label for="additional">Additional preferences</label>
+        <textarea id="additional" name="additional" rows="3" maxlength="500"
+                  placeholder="family-friendly, quick service, …"
+                  {% if not data_ready %}disabled{% endif %}>{{ form.additional or '' }}</textarea>
+        {% if errors.additional %}<p class="error-text">{{ errors.additional }}</p>{% endif %}
+      </div>
+
+      <button type="submit" class="btn-primary" {% if not data_ready %}disabled{% endif %}>
+        Submit preferences
+      </button>
+    </form>
+
+    <footer>
+      <p>Powered by Groq LLM (Phase 4) with rule-based fallback.</p>
+    </footer>
+  </main>
+</body>
+</html>

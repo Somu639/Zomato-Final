@@ -1,0 +1,32 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      WEB_HOST: 0.0.0.0
+      DATASET_CACHE_DIR: /app/data/cache
+      CORS_ORIGINS: http://localhost:3000,http://web:3000
+    volumes:
+      - ./data/cache:/app/data/cache
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      API_URL: http://api:8000
+      NEXT_PUBLIC_API_BASE_URL: ""
+    depends_on:
+      - api

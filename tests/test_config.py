@@ -1,0 +1,42 @@
+import pytest
+
+from zm.config.settings import Settings
+from zm.exceptions import ConfigurationError
+
+
+def test_empty_groq_key_treated_as_missing(monkeypatch):
+    monkeypatch.setenv("GROQ_API_KEY", "   ")
+    settings = Settings()
+    assert not settings.has_groq_api_key
+    with pytest.raises(ConfigurationError):
+        settings.require_groq_api_key()
+
+
+def test_require_groq_api_key_when_set(monkeypatch):
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+    settings = Settings()
+    assert settings.require_groq_api_key() == "test-key"
+
+
+def test_ensure_cache_dir_creates_path(tmp_path, monkeypatch):
+    cache = tmp_path / "cache"
+    monkeypatch.setenv("DATASET_CACHE_DIR", str(cache))
+    settings = Settings()
+    resolved = settings.ensure_cache_dir()
+    assert resolved.exists()
+    assert resolved.is_dir()
+
+
+def test_redacted_summary_never_includes_api_key(monkeypatch):
+    monkeypatch.setenv("GROQ_API_KEY", "secret-key")
+    settings = Settings()
+    summary = settings.redacted_summary()
+    assert "secret" not in str(summary).lower()
+    assert summary["groq_configured"] is True
+    assert summary["web_port"] == 8000
+
+
+def test_web_bind_defaults():
+    settings = Settings()
+    assert settings.web_host == "127.0.0.1"
+    assert settings.web_port == 8000
