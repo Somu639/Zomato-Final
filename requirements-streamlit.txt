@@ -1,2 +1,0 @@
-# Alias for local installs. Streamlit Cloud uses requirements.txt at repo root.
--r requirements.txt

@@ -26,7 +26,7 @@ PHASES = [
     ("5a", "backend API", "active"),
     ("5b", "frontend SPA", "active"),
     ("6", "hardening", "active"),
-    ("7", "streamlit deploy", "active"),
+    ("7", "cloud deploy", "planned"),
 ]
 
 
@@ -75,9 +75,9 @@ def cmd_check() -> int:
     print(f"API / interim UI: http://{settings.web_host}:{settings.web_port}")
     print("  `zm api` — REST backend (Phase 5a)")
     print("  `zm serve` — interim Jinja UI (legacy)")
-    print("  Frontend: `cd frontend && npm run dev` (Phase 6 Next.js, :3000)")
-    print("  Streamlit: `zm streamlit` (Phase 7, :8501)")
-    print("Input channel: React SPA + REST API (CLI is dev-only)")
+    print("  Frontend: `cd frontend && npm run dev` (Next.js, :3000)")
+    print("  Deploy: Render (API) + Vercel (UI) — see Docs/Deployment-Render-Vercel.md")
+    print("Input channel: Next.js on Vercel → FastAPI on Render (CLI is dev-only)")
 
     from zm.data.cache import cache_paths, load_cache
 
@@ -308,34 +308,6 @@ def cmd_api() -> int:
     return 0
 
 
-def cmd_streamlit() -> int:
-    """Start the Streamlit deployment UI (Phase 7)."""
-    import subprocess
-
-    _ensure_project_root_on_path()
-    settings = get_settings()
-    _configure_logging(settings.log_level)
-
-    try:
-        settings.ensure_cache_dir()
-        _ensure_repository()
-    except (ConfigurationError, DataLoadError) as exc:
-        print(f"Warning: {exc}", file=sys.stderr)
-
-    root = Path(__file__).resolve().parents[2]
-    app_path = root / "streamlit_app" / "app.py"
-    if not app_path.is_file():
-        print(f"Error: Streamlit app not found at {app_path}", file=sys.stderr)
-        return 1
-
-    print("Starting Streamlit at http://localhost:8501/")
-    print(f"App: {app_path}")
-    return subprocess.call(
-        [sys.executable, "-m", "streamlit", "run", str(app_path)],
-        cwd=str(root),
-    )
-
-
 def cmd_serve() -> int:
     """Start the interim Jinja web UI (legacy)."""
     settings = get_settings()
@@ -396,7 +368,6 @@ def main(argv: list[str] | None = None) -> int:
 
     sub.add_parser("data-stats", help="Show loaded restaurant counts by city")
     sub.add_parser("api", help="Start REST API backend (Phase 5a)")
-    sub.add_parser("streamlit", help="Start Streamlit UI (Phase 7)")
     sub.add_parser("serve", help="Start interim Jinja web UI (legacy)")
 
     cand = sub.add_parser(
@@ -434,8 +405,6 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_data_stats()
     if command == "api":
         return cmd_api()
-    if command == "streamlit":
-        return cmd_streamlit()
     if command == "serve":
         return cmd_serve()
     if command == "candidates":

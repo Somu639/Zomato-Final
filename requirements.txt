@@ -1,4 +1,2 @@
-# Streamlit Community Cloud reads this file for pip dependencies.
-# Do not put pip requirements in packages.txt (that file is for apt system packages only).
+# Production API (Render) and local install
 -e .
-streamlit>=1.39,<2

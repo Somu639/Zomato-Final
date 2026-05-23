@@ -1,6 +1,6 @@
 # Phase-Wise Architecture: AI-Powered Restaurant Recommendation System
 
-This document defines a phased architecture for the system described in [Problemstatement1.md](./Problemstatement1.md). Phases **0–4** are implemented in the Python core (`src/zm/`). **Phase 5** introduces a **backend + frontend** split; **Phase 6** adds production hardening; **Phase 7** adds an optional **Streamlit** deployment path for Streamlit Cloud and single-process hosting.
+This document defines a phased architecture for the system described in [Problemstatement1.md](./Problemstatement1.md). Phases **0–4** are implemented in the Python core (`src/zm/`). **Phase 5** introduces a **backend + frontend** split; **Phase 6** adds production hardening; **Phase 7** is **cloud deployment** on **Render** (API) and **Vercel** (Next.js UI).
 
 ---
 
@@ -117,7 +117,7 @@ flowchart LR
 | 5a | Backend API | REST API orchestrating core | Phases 1–4 |
 | 5b | Frontend | SPA consuming REST API | Phase 5a |
 | 6 | Hardening (optional) | Docker, cache, observability | Phases 1–5 |
-| 7 | Streamlit deployment | Hosted demo / single-process app | Phases 1–4 (5a optional) |
+| 7 | Cloud deployment | Render (API) + Vercel (frontend) | Phases 5a, 5b, 6 |
 
 **Current implementation status**
 
@@ -125,9 +125,9 @@ flowchart LR
 |-------|--------|----------|
 | 0–4 | Implemented | `src/zm/` |
 | 5a | Implemented | `backend/` — FastAPI REST API |
-| 5b | Implemented | `frontend/` — UI (migrated to Next.js in Phase 6) |
+| 5b | Implemented | `frontend/` — Next.js (Vercel) |
 | 6 | Implemented | Docker Compose, cache, rate limits, observability, INR budget |
-| 7 | Implemented | `streamlit_app/` — Streamlit Cloud / self-hosted (`zm streamlit`) |
+| 7 | Planned | [Deployment-Render-Vercel.md](./Deployment-Render-Vercel.md), `render.yaml` |
 | 5 (interim / legacy) | Available | `src/zm/web/` (monolithic FastAPI + Jinja, `zm serve`) |
 
 ---
@@ -505,137 +505,55 @@ This monolith **implements the same orchestration** as the target backend but mi
 
 ---
 
-## Phase 7: Deployment with Streamlit
+## Phase 7: Cloud deployment (Render + Vercel)
 
-**Goal:** Ship a **single-process, Python-only** deployment path for demos, internal tools, and **Streamlit Community Cloud** (or any host that runs `streamlit run`). The app calls the **`zm` core directly**—no separate Next.js build—while reusing the same validation, filters, and Groq pipeline as Phases 1–4.
+**Goal:** Host the production stack as two managed services: **FastAPI on Render**, **Next.js on Vercel**. No Streamlit in the deployment path.
 
-*Maps to problem statement: **§2 User Input** and **§5 Output Display** (alternate delivery channel)*
-
-### Why Streamlit (vs Phase 5–6 stack)
-
-| Aspect | Phase 5–6 (Next.js + FastAPI) | Phase 7 (Streamlit) |
-|--------|-------------------------------|---------------------|
-| Processes | API + web (2+ services) | One Python process |
-| Hosting | Docker / VPS / separate front & API URLs | [Streamlit Cloud](https://streamlit.io/cloud), Railway, etc. |
-| Best for | Production product UI | Quick deploy, hackathons, stakeholder demos |
-| Groq key | Server-side only (API) | Server-side only (`st.secrets` / env) |
-| Dataset | Volume / `data/cache` on API host | Same cache; load at app startup |
-
-Streamlit does **not** replace the Next.js product; it is an **additional deployment option** after the core is stable.
+**Full runbook:** [Deployment-Render-Vercel.md](./Deployment-Render-Vercel.md)
 
 ### Architecture
 
 ```mermaid
-flowchart TB
-    subgraph ST["streamlit/ (Phase 7)"]
-        APP[app.py]
-        UI[st.form + widgets]
-        RENDER[st cards / expanders]
-        APP --> UI --> RENDER
-    end
+flowchart LR
+    User[User]
+    Vercel[Vercel — Next.js]
+    Render[Render — FastAPI]
+    Groq[Groq]
+    HF[Hugging Face]
 
-    subgraph CORE["src/zm/ (Phases 0–4)"]
-        VAL[input.validator]
-        DATA[data.repository]
-        INT[integration]
-        ENG[engine / Groq]
-    end
-
-    subgraph HOST["Deployment"]
-        CLOUD[Streamlit Community Cloud]
-        SECRETS[st.secrets / env]
-    end
-
-    UI --> VAL
-    VAL --> INT
-    DATA --> INT
-    INT --> ENG
-    ENG --> RENDER
-  APP --> CLOUD
-    SECRETS --> APP
+    User --> Vercel
+    Vercel -->|HTTPS /api/v1| Render
+    Render --> Groq
+    Render --> HF
 ```
 
-**Optional integration mode:** The Streamlit app may call **`backend/` REST** (`POST /api/v1/recommendations`) instead of importing `zm` directly when you want one deployed API and multiple thin clients. Default for Phase 7 is **in-process `zm`** for simplest hosting.
+| Service | Platform | Repo path | Start / build |
+|---------|----------|-----------|----------------|
+| **Backend** | Render Web Service | repo root | Build: `pip install -e . && zm load-data` · Start: `uvicorn backend.main:create_app --factory --host 0.0.0.0 --port $PORT` |
+| **Frontend** | Vercel | `frontend/` | `npm run build` · env: `NEXT_PUBLIC_API_BASE_URL` |
 
-### Components
+### Repo artifacts
 
-| Component | Responsibility |
-|-----------|----------------|
-| `streamlit/app.py` | Entrypoint: `streamlit run streamlit/app.py` |
-| `streamlit/pages/` (optional) | Multi-page: Home, About, Admin stats |
-| Session state | Cache repository handle, last results, loading flags |
-| Preference widgets | `st.selectbox` (city), `st.text_input` (area, cuisines), `st.slider` (rating), budget band or ₹ for two |
-| Results | `st.container` / cards: rank, name, cuisine, rating, cost, `st.markdown` explanation |
-| Secrets | `GROQ_API_KEY`, `HF_DATASET_ID` via `.streamlit/secrets.toml` (local) or Cloud secrets |
-| Data bootstrap | On first run: `build_repository()` if cache exists; sidebar message if `zm load-data` needed |
+| File | Purpose |
+|------|---------|
+| `render.yaml` | Optional Render Blueprint |
+| `requirements.txt` | Python deps for Render (`-e .`) |
+| `frontend/vercel.json` | Vercel project hints |
+| `frontend/.env.example` | `NEXT_PUBLIC_API_BASE_URL` template |
 
-### Suggested layout
+### Secrets
 
-```
-streamlit_app/                # Named streamlit_app (avoids PyPI streamlit import clash)
-├── app.py                    # Main UI + recommend button
-├── service.py                # In-process zm pipeline
-├── components/
-│   ├── preference_form.py    # Widgets → PreferenceInput
-│   └── results.py            # Render EngineResult / cards
-└── README.md                 # Deploy steps for Streamlit Cloud
-
-.streamlit/config.toml        # Theme (dark) at repo root
-requirements.txt              # Streamlit Cloud pip dependencies (repo root)
-requirements-streamlit.txt    # Local: pip install -r requirements-streamlit.txt
-
-# Repo root (deployment)
-├── requirements-streamlit.txt  # zm + streamlit (+ optional pins)
-└── packages.txt                # Streamlit Cloud: path to requirements
-```
-
-### User flow (Streamlit)
-
-1. User opens deployed URL (e.g. `https://<app>.streamlit.app`).
-2. Sidebar or main column: city, area, budget (band or ₹), cuisines, min rating, additional notes.
-3. **Get recommendations** → `st.spinner` → `validate_json` → `run_integration` → `run_recommendation` (or `backend` HTTP).
-4. Show summary, source (`groq` / `fallback`), warning banner if fallback.
-5. Expandable cards per restaurant (same five fields as problem statement §5).
-
-### Deployment targets
-
-| Target | Notes |
+| Secret | Where |
 |--------|--------|
-| **Streamlit Community Cloud** | Connect GitHub repo; set `main` file to `streamlit_app/app.py`; add secrets in dashboard |
-| **Local** | `pip install -e ".[streamlit]"` then `zm streamlit` or `streamlit run streamlit_app/app.py` |
-| **Docker** | Single image: Python + `streamlit` + copy `data/cache` or download on start |
-| **With Phase 6 API** | Streamlit as UI-only client to `API_URL` if cache/Groq should live only on API tier |
-
-### Configuration
-
-| Variable / secret | Required | Description |
-|-------------------|----------|-------------|
-| `GROQ_API_KEY` | For AI rankings | Same as Phase 4; never exposed to browser |
-| `DATASET_CACHE_DIR` | No | Default `data/cache`; mount volume on Cloud if repo cache not committed |
-| `TOP_K_CANDIDATES` / `DISPLAY_TOP_N` | No | Same as core settings |
-
-**Streamlit Cloud:** Do not commit `.streamlit/secrets.toml`; use the Cloud **Secrets** UI (TOML format).
-
-### Deliverables
-
-- `streamlit run` works locally with cached `data/cache/restaurants_v1.jsonl`
-- Documented deploy checklist in `streamlit/README.md`
-- `requirements-streamlit.txt` (or optional extra `[streamlit]` in `pyproject.toml`)
-- Optional `zm streamlit` CLI alias mirroring `zm api`
+| `GROQ_API_KEY` | Render only |
+| `CORS_ORIGINS` | Render (Vercel production URL) |
+| `NEXT_PUBLIC_API_BASE_URL` | Vercel (Render API URL) |
 
 ### Exit criteria
 
-- End-to-end recommend flow works on Streamlit Community Cloud with secrets configured
-- Invalid input shown inline (`st.error` per field); no Groq call on zero candidates
-- Top N results show name, cuisine, rating, cost, AI explanation
-- No API keys or raw dataset exposed in the client bundle (Streamlit server holds secrets)
-
-### Relationship to other phases
-
-- **Reuses** Phases 0–4 unchanged (`src/zm/`).
-- **Does not require** Phase 5b (Next.js) for deployment.
-- **Can reuse** Phase 5a if you prefer a remote API; **can reuse** Phase 6 caching by calling REST instead of in-process engine.
-- **Complements** Phase 6 Docker Compose (multi-service production) with a **low-ops** single-app path.
+- Vercel UI loads cities from Render `/api/v1/locations`
+- Full recommend flow works with CORS configured
+- `GROQ_API_KEY` never present in frontend bundle or Vercel env
 
 ---
 
@@ -662,23 +580,6 @@ sequenceDiagram
     FE-->>U: Render recommendation cards
 ```
 
-### End-to-end flow (Phase 7 — Streamlit)
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant ST as Streamlit app
-    participant CORE as zm core
-    participant GROQ as Groq
-
-    U->>ST: Widgets + Submit
-    ST->>CORE: validate → integrate → engine
-    CORE->>GROQ: chat completion
-    GROQ-->>CORE: JSON rankings
-    CORE-->>ST: EngineResult + displays
-    ST-->>U: st cards / markdown
-```
-
 ---
 
 ## Repository Layout (Target)
@@ -692,11 +593,8 @@ ZM/
 ├── frontend/                # Phase 5b / 6 — Next.js UI
 │   ├── app/
 │   └── package.json
-├── streamlit_app/           # Phase 7 — Streamlit deployment app
-│   ├── app.py
-│   ├── service.py
-│   └── components/
-├── .streamlit/config.toml
+├── render.yaml              # Phase 7 — Render Blueprint (optional)
+├── requirements.txt         # Render pip install
 ├── src/zm/                  # Phases 0–4 core (library)
 │   ├── config/
 │   ├── models/
@@ -726,7 +624,7 @@ flowchart TD
     P5A[Phase 5a: Backend API]
     P5B[Phase 5b: Frontend]
     P6[Phase 6: Hardening]
-    P7[Phase 7: Streamlit deploy]
+    P7[Phase 7: Render + Vercel]
 
     P0 --> P1
     P0 --> P2
@@ -737,15 +635,13 @@ flowchart TD
     P2 --> P5A
     P5A --> P5B
     P5B --> P6
-    P4 --> P7
-    P6 -.->|optional| P7
+    P5B --> P7
+    P6 --> P7
 ```
 
-**Recommended order:** 0 → 1 → 2 → 3 → 4 → **5a → 5b** → (6) → **(7)**
+**Recommended order:** 0 → 1 → 2 → 3 → 4 → **5a → 5b** → (6) → **7 (deploy)**
 
 Phases **5a** and **5b** can be developed in parallel once OpenAPI contract is agreed (contract-first).
-
-Phase **7** can start after Phase **4** (no Next.js required); align with Phase **6** if the Streamlit app calls the REST API instead of in-process `zm`.
 
 ---
 
@@ -757,8 +653,8 @@ Phase **7** can start after Phase **4** (no Next.js required); align with Phase 
 | User input | Phase 2 + Phase 5b (form) |
 | Integration layer | Phase 3 |
 | Recommendation engine | Phase 4 (Groq) |
-| Output display | Phase 5a (API) + Phase 5b (UI), or Phase 7 (Streamlit) |
-| Deployment (demo / Cloud) | Phase 7 (Streamlit) |
+| Output display | Phase 5a (API) + Phase 5b (UI) |
+| Deployment (production) | Phase 7 (Render + Vercel) |
 
 ---
 
@@ -768,8 +664,8 @@ Phase **7** can start after Phase **4** (no Next.js required); align with Phase 
 |-------|--------|-------|
 | **Current MVP** | 0–4 + interim web | Python `zm`, FastAPI + Jinja in `src/zm/web/` |
 | **Target product** | 0–5b | `src/zm` core + `backend/` (FastAPI) + `frontend/` (Next.js) |
-| **Production** | 0–6 | Above + Docker Compose, caching, rate limits, observability |
-| **Streamlit deploy** | 0–4 + 7 | `src/zm` + `streamlit/` on Streamlit Cloud or single-container host |
+| **Production** | 0–7 | Next.js on Vercel + FastAPI on Render (+ Phase 6 hardening) |
+| **Local Docker** | 0–6 | `docker compose up` (API + web) |
 
 ---
 
@@ -780,13 +676,14 @@ Phase **7** can start after Phase **4** (no Next.js required); align with Phase 
 3. Build React app calling the same JSON shape already used by `POST /api/preferences`.
 4. Keep `zm serve` as alias to backend only, or run `uvicorn backend.main:app` + `npm run dev` in frontend.
 5. Remove Jinja templates once frontend reaches exit criteria.
-6. Add Phase 7 `streamlit/` for hosts that prefer one Python app (see **Phase 7**); share validation and engine with `backend/services/recommendation_service.py` where possible.
+6. Deploy Phase 7 per [Deployment-Render-Vercel.md](./Deployment-Render-Vercel.md).
 
-This architecture keeps structured filtering and Groq in the Python core, with a clear boundary: **frontend = UX**, **backend = HTTP + orchestration**, **zm = domain logic**, **Streamlit = optional single-process deploy UI**.
+This architecture keeps structured filtering and Groq in the Python core, with a clear boundary: **frontend (Vercel) = UX**, **backend (Render) = HTTP + orchestration**, **zm = domain logic**.
 
 ---
 
 ## Related documentation
 
+- [Deployment-Render-Vercel.md](./Deployment-Render-Vercel.md) — Render + Vercel deployment plan
 - [GoogleStitch-UI-Prompt.md](./GoogleStitch-UI-Prompt.md) — copy-paste prompt for Google Stitch to generate the **Next.js** frontend UI
 - [EdgeCases.md](./EdgeCases.md)

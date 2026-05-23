@@ -2,9 +2,9 @@
 
 Zomato-inspired recommendation service combining structured restaurant data with an LLM.
 
-**Current status:** Phases **0–7** — core library, REST API, **Next.js** frontend, Docker/hardening, and **Streamlit** deployment.
+**Current status:** Phases **0–6** implemented locally; **Phase 7** production deploy on **Render** (API) + **Vercel** (Next.js UI).
 
-**Input channels:** **Next.js** (`frontend/` → `backend/` API) or **Streamlit** (`streamlit_app/`, in-process `zm`). The `zm` CLI is for developers only.
+**Input channel:** Next.js frontend → FastAPI backend. The `zm` CLI is for developers only.
 
 ## Quick start
 
@@ -22,21 +22,11 @@ zm load-data
 zm data-stats
 ```
 
-### Phase 1: Load restaurant data
-
-```bash
-zm load-data          # download CSV, normalize, write cache, load memory
-zm load-data --force  # rebuild cache from Hugging Face
-zm data-stats         # counts by city (after load-data)
-```
-
-Cached normalized data: `data/cache/restaurants_v1.jsonl`
-
-### Phase 5–6: API + Next.js frontend (primary)
+### Local development (API + frontend)
 
 ```bash
 zm load-data    # required once
-zm api          # REST API at http://127.0.0.1:8000/
+zm api          # http://127.0.0.1:8000/
 ```
 
 In a second terminal:
@@ -47,14 +37,6 @@ npm install
 npm run dev     # http://localhost:3000/
 ```
 
-Phase 6 adds **₹ budget for two** (maps to low/medium/high), **response caching**, **rate limiting**, **request IDs**, and **Docker Compose**:
-
-```bash
-docker compose up --build
-```
-
-API: http://localhost:8000 · Web: http://localhost:3000
-
 | Endpoint | Description |
 |----------|-------------|
 | `GET /health` | Liveness + data loaded |
@@ -62,91 +44,64 @@ API: http://localhost:8000 · Web: http://localhost:3000
 | `GET /api/v1/metadata` | Budget bands, example cuisines |
 | `POST /api/v1/recommendations` | Full pipeline → ranked JSON |
 
-OpenAPI docs: `http://127.0.0.1:8000/docs`
+OpenAPI: http://127.0.0.1:8000/docs
 
-### Phase 7: Streamlit deployment
+### Production deployment (Render + Vercel)
 
-Single-process UI for demos and [Streamlit Cloud](https://streamlit.io/cloud):
+Step-by-step guide: **[Docs/Deployment-Render-Vercel.md](Docs/Deployment-Render-Vercel.md)**
+
+| Service | Platform | Config |
+|---------|----------|--------|
+| Backend | [Render](https://render.com) | `render.yaml`, root `requirements.txt` |
+| Frontend | [Vercel](https://vercel.com) | Root dir `frontend/`, `NEXT_PUBLIC_API_BASE_URL` |
+
+### Docker (local / optional)
 
 ```bash
-zm load-data
-pip install -e ".[streamlit]"
-zm streamlit    # http://localhost:8501/
+docker compose up --build
 ```
 
-See [streamlit_app/README.md](streamlit_app/README.md) for Cloud secrets and deploy steps.
-
-### Phase 2 (legacy): Jinja web UI
+### Legacy Jinja UI
 
 ```bash
 zm serve        # http://127.0.0.1:8000/ — interim monolithic UI
 ```
 
-### Phase 3: Integration (dev CLI)
-
-```bash
-zm candidates -l Bangalore -b medium -c "North Indian, Chinese" -r 4.0
-zm candidates -l Bangalore -b medium -c Italian --json
-```
-
-### Phase 4: Groq recommendations
-
-Set `GROQ_API_KEY` in `.env`, then:
-
-```bash
-zm recommend -l Bangalore -b medium -c "North Indian" -r 4.0
-zm serve   # form submit runs full pipeline including Groq
-```
-
-Without `GROQ_API_KEY`, the app uses rule-based fallback rankings.
-
 ## Environment variables
-
-Precedence: **environment variables override** `.env` file values (pydantic-settings default).
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `GROQ_API_KEY` | For AI recommendations (Phase 4) | — | Groq API key ([console.groq.com](https://console.groq.com)) |
-| `GROQ_MODEL` | No | `llama-3.3-70b-versatile` | Groq chat model |
-| `LLM_TIMEOUT_SECONDS` | No | `60` | Groq request timeout (seconds) |
-| `HF_DATASET_ID` | No | `ManikaSaini/zomato-restaurant-recommendation` | Hugging Face dataset ID |
-| `DATASET_CACHE_DIR` | No | `data/cache` | Local cache directory for dataset files |
-| `TOP_K_CANDIDATES` | No | `25` | Max restaurants sent to the LLM (Phase 3+) |
-| `DISPLAY_TOP_N` | No | `5` | Number of results shown to the user (Phase 5+) |
-| `LOG_LEVEL` | No | `INFO` | Application log level |
-| `WEB_HOST` | No | `127.0.0.1` | Bind address for API / web (Phase 5a+) |
-| `WEB_PORT` | No | `8000` | Port for API / interim `zm serve` |
-| `CORS_ORIGINS` | No | `http://localhost:3000,...` | Comma-separated origins for Next.js (Phase 5a/6) |
-| `RECOMMENDATION_CACHE_TTL_SECONDS` | No | `300` | TTL for identical POST /recommendations (0 = off) |
-| `RATE_LIMIT_PER_MINUTE` | No | `30` | Per-IP rate limit (0 = off) |
+| `GROQ_API_KEY` | For AI (Render/local) | — | Groq API key |
+| `GROQ_MODEL` | No | `llama-3.3-70b-versatile` | Groq model |
+| `CORS_ORIGINS` | Render prod | `http://localhost:3000,...` | Include your Vercel URL |
+| `NEXT_PUBLIC_API_BASE_URL` | Vercel prod | — | Render API URL (see `frontend/.env.example`) |
+| `DATASET_CACHE_DIR` | No | `data/cache` | Restaurant cache |
+| `WEB_HOST` / `WEB_PORT` | No | `127.0.0.1` / `8000` | Local API bind |
+
+See [.env.example](.env.example) for the full list.
 
 ## Project layout
 
 ```
-backend/             # Phase 5a — FastAPI REST API
-frontend/            # Phase 5b/6 — Next.js App Router UI
-streamlit_app/       # Phase 7 — Streamlit deployment
-src/zm/              # Phases 0–4 — core library
-├── config/          # Settings and environment loading
-├── models/          # Restaurant, UserPreferences, Recommendation
-├── data/            # Phase 1 — loader, normalizer, cache, repository
-├── input/           # Phase 2 — validation
-├── web/             # Interim Jinja UI (legacy)
-├── integration/     # Phase 3 — filters, context, prompts
-└── engine/          # Phase 4 — Groq client, parser, fallback
+backend/             # FastAPI REST API (Render)
+frontend/            # Next.js App Router (Vercel)
+render.yaml          # Render Blueprint
+requirements.txt     # Python deps for Render
+src/zm/              # Core library (Phases 0–4)
+Docs/                # Architecture + deployment guides
 ```
 
 ## Documentation
 
-- [Problem statement](Docs/Problemstatement1.md)
+- [Deployment: Render + Vercel](Docs/Deployment-Render-Vercel.md)
 - [Phase-wise architecture](Docs/PhaseWiseArchitecture.md)
+- [Problem statement](Docs/Problemstatement1.md)
 - [Edge cases](Docs/EdgeCases.md)
-- [Google Stitch UI prompt](Docs/GoogleStitch-UI-Prompt.md) — copy-paste prompt to generate the Next.js frontend UI
-- [Streamlit deploy](streamlit_app/README.md) — Phase 7 hosting guide
+- [Google Stitch UI prompt](Docs/GoogleStitch-UI-Prompt.md)
 
 ## Development
 
 ```bash
 pytest
-zm --check
+zm check
 ```

@@ -1,7 +1,7 @@
 .env
 **/.env
 data/.env
-.streamlit/secrets.toml
+frontend/.env.local
 .venv/
 venv/
 __pycache__/
