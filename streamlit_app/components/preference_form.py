@@ -1,4 +1,4 @@
-"""Preference form — user-facing fields only (Phase 7)."""
+"""Zomato-style filter form (Phase 7)."""
 
 from __future__ import annotations
 
@@ -7,68 +7,77 @@ import streamlit as st
 from streamlit_app.service import PreferenceInput
 
 BUDGET_BANDS = ["low", "medium", "high"]
-EXAMPLE_CUISINES = "North Indian, Italian, Chinese"
+EXAMPLE_CUISINES = "North Indian, Biryani, Chinese"
 
 
 def render_preference_form(locations: list[str]) -> PreferenceInput | None:
-    """Main-column form; no admin / model-tuning controls."""
     if not locations:
         st.warning(
-            "Restaurant data is not loaded yet. On Streamlit Cloud, the app downloads "
-            "the dataset on first startup — refresh in a minute. Locally, run `zm load-data`."
+            "Loading restaurants… Refresh shortly, or run `zm load-data` locally."
         )
         return None
 
-    st.markdown('<p class="zm-panel-title">Your preferences</p>', unsafe_allow_html=True)
+    st.markdown(
+        """
+        <p class="z-section-title">🔍 Find restaurants</p>
+        <p class="z-section-sub">Set filters like on Zomato — we’ll rank matches for you.</p>
+        """,
+        unsafe_allow_html=True,
+    )
 
     with st.form("preferences", clear_on_submit=False):
         location = st.selectbox(
-            "City",
+            "📍 City",
             options=locations,
             index=0,
-            help="Choose where you want to dine",
         )
         area = st.text_input(
-            "Area (optional)",
-            placeholder="e.g. Bellandur, Indiranagar",
+            "Neighbourhood",
+            placeholder="Search area, e.g. Bellandur",
         )
         cuisines = st.text_input(
-            "Cuisines",
+            "🍽️ Cuisine",
             placeholder=EXAMPLE_CUISINES,
-            help="Comma-separated",
         )
-        col_a, col_b = st.columns(2)
-        with col_a:
-            use_inr = st.checkbox("Budget in ₹ (for two)", value=True)
-        with col_b:
-            min_rating = st.slider(
-                "Minimum rating",
-                0.0,
-                5.0,
-                4.0,
-                0.1,
-                label_visibility="visible",
-            )
+        st.markdown(
+            '<p style="font-size:0.8rem;color:#696B79;margin:0.5rem 0 0.25rem;">Budget & rating</p>',
+            unsafe_allow_html=True,
+        )
+        use_inr = st.checkbox("Use budget for two (₹)", value=True)
         if use_inr:
             budget_inr = st.number_input(
-                "Budget for two (₹)",
+                "₹ for two",
                 min_value=100,
                 max_value=50000,
                 value=2000,
                 step=100,
+                label_visibility="collapsed",
             )
-            st.caption("≤₹600 · low  ·  ₹601–₹2000 · medium  ·  >₹2000 · high")
+            st.caption("Budget bands: ≤₹600 · ₹601–2k · ₹2k+")
             budget = None
         else:
             budget_inr = None
-            budget = st.selectbox("Budget band", BUDGET_BANDS, index=1)
+            budget = st.selectbox(
+                "Price range",
+                BUDGET_BANDS,
+                index=1,
+                format_func=lambda x: {"low": "₹ Budget", "medium": "₹₹ Mid", "high": "₹₹₹ Premium"}[x],
+            )
+        min_rating = st.slider(
+            "Minimum rating",
+            0.0,
+            5.0,
+            4.0,
+            0.1,
+        )
         additional = st.text_area(
-            "Additional notes",
-            placeholder="Ambiance, dietary needs, occasion…",
-            height=72,
+            "More filters",
+            placeholder="Family-friendly, outdoor seating…",
+            height=68,
+            label_visibility="collapsed",
         )
         submitted = st.form_submit_button(
-            "Get recommendations",
+            "Search restaurants",
             type="primary",
             use_container_width=True,
         )
@@ -76,7 +85,7 @@ def render_preference_form(locations: list[str]) -> PreferenceInput | None:
     if not submitted:
         return None
     if not cuisines.strip():
-        st.error("Enter at least one cuisine.")
+        st.error("Add at least one cuisine to search.")
         return None
 
     cuisine_list = [c.strip() for c in cuisines.split(",") if c.strip()]

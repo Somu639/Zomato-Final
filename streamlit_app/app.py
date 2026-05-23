@@ -1,8 +1,5 @@
 """
-ZM Restaurant Recommendations — Streamlit app (Phase 7).
-
-Run from repo root:
-    streamlit run streamlit_app/app.py
+ZM / Zomato-style restaurant recommendations — Streamlit (Phase 7).
 """
 
 from __future__ import annotations
@@ -25,7 +22,7 @@ from streamlit_app.components.results import (
     render_validation_errors,
 )
 from streamlit_app.service import NoMatchError, recommend
-from streamlit_app.styles import inject_styles, render_hero
+from streamlit_app.styles import inject_styles, render_header
 from zm.config import get_settings
 from zm.data.pipeline import build_repository
 from zm.data.repository import get_repository_holder
@@ -33,7 +30,6 @@ from zm.exceptions import ConfigurationError, DataLoadError, ValidationError
 
 
 def _apply_streamlit_secrets() -> None:
-    """Only deployment secrets — no model-tuning or load-limit overrides in the UI."""
     try:
         secrets = st.secrets
     except Exception:
@@ -44,7 +40,7 @@ def _apply_streamlit_secrets() -> None:
     get_settings.cache_clear()
 
 
-@st.cache_resource(show_spinner="Loading restaurant data…")
+@st.cache_resource(show_spinner="Loading restaurants…")
 def load_repository():
     settings = get_settings()
     settings.ensure_cache_dir()
@@ -58,7 +54,7 @@ def load_repository():
 
 def main() -> None:
     st.set_page_config(
-        page_title="ZM — Restaurant Recommendations",
+        page_title="Zomatomate — Restaurant picks",
         page_icon="🍽️",
         layout="wide",
         initial_sidebar_state="collapsed",
@@ -66,7 +62,6 @@ def main() -> None:
     inject_styles()
     _apply_streamlit_secrets()
     settings = get_settings()
-    render_hero()
 
     try:
         repo = load_repository()
@@ -77,28 +72,25 @@ def main() -> None:
         locations = []
         data_error = str(exc)
 
+    location_hint = locations[0] if locations else None
+    render_header(location_hint)
+
     if data_error:
-        st.error(
-            f"{data_error}\n\nEnsure the Hugging Face dataset can be downloaded on first run."
-        )
+        st.error(data_error)
 
-    col_form, col_results = st.columns([1, 1], gap="large")
+    col_filters, col_list = st.columns([5, 7], gap="medium")
 
-    with col_form:
-        st.markdown('<div class="zm-panel">', unsafe_allow_html=True)
+    with col_filters:
+        st.markdown('<div class="z-filter-box">', unsafe_allow_html=True)
         pref_input = render_preference_form(locations)
         st.markdown("</div>", unsafe_allow_html=True)
 
-    with col_results:
-        st.markdown(
-            '<p class="zm-panel-title">Recommendations</p>',
-            unsafe_allow_html=True,
-        )
+    with col_list:
         if pref_input is None or repo is None:
             render_empty_results()
             return
 
-        with st.spinner("Finding the best matches…"):
+        with st.spinner("Finding the best restaurants near you…"):
             try:
                 outcome = recommend(pref_input, repo, settings=settings)
             except ValidationError as exc:
