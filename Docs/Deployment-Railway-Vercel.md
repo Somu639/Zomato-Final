@@ -161,6 +161,76 @@ Redeploy or wait for Railway to restart the service.
 | CORS error | Missing Vercel URL in `CORS_ORIGINS` | Update Railway variables |
 | `data_loaded: false` | Cache still downloading | Wait 1–2 min; check Railway logs |
 | Groq fallback only | Missing `GROQ_API_KEY` on Railway | Set variable in Railway |
+| **Bad credentials** / **repository not authorized** | [GitHub app token incident](https://www.githubstatus.com/incidents/k5z4d1v1tqmt) or stale Railway/Vercel ↔ GitHub link | See **Part 7** below (CLI deploy bypasses this) |
+
+---
+
+## Part 7 — GitHub app auth errors (Railway / Vercel)
+
+If Railway or Vercel shows **Bad credentials**, **repository not authorized**, or fails to connect the repo, this is usually a **GitHub-side** issue with **GitHub App installation tokens** (not your code). Check [GitHub Status](https://www.githubstatus.com/).
+
+Your repo and `git push` can still work while dashboard deploy fails. Use one of these **workarounds** until GitHub recovers or you reconnect the app.
+
+### Option A — Deploy backend with Railway CLI (recommended bypass)
+
+Deploys from your machine; **does not use** the broken GitHub app token.
+
+```powershell
+# One-time: install CLI
+npm install -g @railway/cli
+
+# Login (opens browser)
+railway login
+
+# From repo root
+cd c:\Users\din17512\Music\ZM
+
+# New project, or link an existing one
+railway init
+# OR: railway link
+
+# Set secrets (repeat for each variable)
+railway variables set GROQ_API_KEY=your-key
+railway variables set CORS_ORIGINS=https://your-app.vercel.app
+railway variables set WEB_HOST=0.0.0.0
+
+# Deploy current directory
+railway up
+
+# Public URL
+railway domain
+```
+
+After deploy, copy the Railway URL into Vercel as `NEXT_PUBLIC_API_BASE_URL`.
+
+### Option B — Reconnect GitHub when status is green
+
+1. [GitHub Status](https://www.githubstatus.com/) — wait until **GitHub.com** / **API** are operational.
+2. **GitHub** → Settings → **Applications** → **Installed GitHub Apps** → **Railway** → Configure → ensure **Somu639/Zomato-Final** is allowed → Save.
+3. **Railway** → Project → **Settings** → disconnect GitHub → connect again → select repo + branch `main`.
+4. **Redeploy** from Railway dashboard.
+
+Same pattern for **Vercel**: Settings → Git → Disconnect → reconnect repo.
+
+### Option C — Deploy frontend with Vercel CLI
+
+If Vercel GitHub import fails:
+
+```powershell
+npm install -g vercel
+cd c:\Users\din17512\Music\ZM\frontend
+vercel login
+vercel --prod
+# Set NEXT_PUBLIC_API_BASE_URL when prompted or in Vercel dashboard
+```
+
+### Option D — Confirm repo access (local)
+
+```powershell
+git ls-remote https://github.com/Somu639/Zomato-Final.git HEAD
+```
+
+If this succeeds, the repo is fine; retry dashboard deploy or use CLI (Option A/C).
 
 ---
 

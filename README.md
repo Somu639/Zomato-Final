@@ -50,6 +50,8 @@ OpenAPI: http://127.0.0.1:8000/docs
 
 Step-by-step guide: **[Docs/Deployment-Railway-Vercel.md](Docs/Deployment-Railway-Vercel.md)**
 
+If GitHub shows **Bad credentials** / **repository not authorized** when connecting Railway or Vercel, use **[scripts/DEPLOY-GITHUB-WORKAROUND.md](scripts/DEPLOY-GITHUB-WORKAROUND.md)** (CLI deploy bypass).
+
 | Service | Platform | Config |
 |---------|----------|--------|
 | Backend | [Railway](https://railway.com) | `railway.toml`, `Procfile`, `requirements.txt` |
