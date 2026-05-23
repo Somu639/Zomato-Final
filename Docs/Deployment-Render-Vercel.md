@@ -44,7 +44,7 @@ flowchart LR
 
 - Entry: `backend/main.py` → `uvicorn backend.main:create_app --factory`
 - Python package: `src/zm` + `backend/` (installed via `pip install -e .` from root `requirements.txt`)
-- Data: built during deploy with `zm load-data` (downloads Hugging Face CSV → `data/cache/`)
+- Data: downloaded on **first startup** in a background thread (or from `data/cache/` if present). Build no longer runs `zm load-data` so deploys finish reliably.
 
 Config file in repo: [`render.yaml`](../render.yaml) (optional [Blueprint](https://render.com/docs/blueprint-spec)).
 
@@ -61,8 +61,8 @@ Config file in repo: [`render.yaml`](../render.yaml) (optional [Blueprint](https
 | **Root Directory** | *(leave empty — repo root)* |
 | **Runtime** | Python 3 |
 | **Build Command** | `pip install -e . && zm load-data` |
-| **Root Directory** | *(empty — repo root, not `frontend/`)* |
-| **Start Command** | `bash scripts/render_start.sh` |
+| **Build Command** | `pip install -e .` |
+| **Start Command** | `uvicorn backend.main:create_app --factory --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips='*'` |
 | **Health Check Path** | `/health` |
 
 4. **Environment variables** (Render → Environment):
@@ -169,7 +169,7 @@ Redeploy or save env (Render restarts the service).
 ### Backend (Render)
 
 - [ ] Web service created from `main`
-- [ ] Build: `pip install -e . && zm load-data` succeeds
+- [ ] Build: `pip install -e .` succeeds
 - [ ] Start: uvicorn on `$PORT`
 - [ ] `GROQ_API_KEY` set
 - [ ] `/health` returns `data_loaded: true` after build
@@ -205,7 +205,8 @@ Redeploy or save env (Render restarts the service).
 
 | Symptom | Likely cause | Fix |
 |---------|----------------|-----|
-| `{"detail":"Not Found"}` on `/health` or `/api/v1/*` | Wrong start command (`zm serve` / legacy UI) or old deploy | Use `bash scripts/render_start.sh`; redeploy from latest `main` |
+| **502 / deploy failed** | Build ran `zm load-data` (timeout) or bash script had Windows line endings | Build: `pip install -e .` only; start: uvicorn command above |
+| `{"detail":"Not Found"}` on `/health` or `/api/v1/*` | Wrong start command (`zm serve` / legacy UI) or old deploy | Use uvicorn start command; redeploy from latest `main` |
 | Plain text `Not Found` + header `x-render-routing: no-server` | Service not running or wrong hostname | Create/redploy Web Service; copy URL from Render dashboard |
 | `NEXT_PUBLIC_API_BASE_URL` ends with `/api` | Double path `/api/api/v1/...` → 404 | Use `https://your-service.onrender.com` only (no `/api` suffix) |
 | CORS error in browser | `CORS_ORIGINS` missing Vercel URL | Update Render env |

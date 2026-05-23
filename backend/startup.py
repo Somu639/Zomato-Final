@@ -4,28 +4,39 @@ from __future__ import annotations
 
 import logging
 
-from backend.api.deps import get_restaurant_repository
+from backend.data_loader import (
+    load_repository_from_cache_only,
+    prefetch_repository_in_background,
+)
 from zm.config import Settings, get_settings
-from zm.exceptions import DataLoadError
 
 logger = logging.getLogger(__name__)
 
 
 def bootstrap_repository(settings: Settings | None = None) -> int | None:
     """
-    Load the restaurant repository into the process holder.
+    Fast startup: load cache if present; never block on Hugging Face download.
 
-    Returns restaurant count on success, or None if data is unavailable.
+    On Render, dataset download runs in a background thread after the server
+    binds to PORT so deploy health checks pass quickly.
     """
     settings = settings or get_settings()
-    try:
-        repo = get_restaurant_repository()
-        count = repo.count()
-        logger.info("Restaurant repository ready (%s restaurants)", count)
-        return count
-    except DataLoadError as exc:
-        logger.warning("Restaurant data not available at startup: %s", exc)
-        return None
+    repo = load_repository_from_cache_only(settings)
+    if repo is not None:
+        return repo.count()
+
+    if settings.is_render:
+        prefetch_repository_in_background(settings)
+        logger.info(
+            "No local cache yet; API will serve /health immediately "
+            "and load data in the background"
+        )
+    else:
+        logger.warning(
+            "No restaurant cache at startup. Run `zm load-data` or wait for "
+            "the first API request to build the dataset."
+        )
+    return None
 
 
 def log_deployment_context(settings: Settings) -> None:

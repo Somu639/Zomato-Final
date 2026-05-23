@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 
 from backend.api.deps import get_app_settings, get_restaurant_repository
+from backend.data_loader import load_repository_from_cache_only
 from backend.api.schemas import (
     BudgetInrBandsDTO,
     HealthResponse,
@@ -16,21 +17,19 @@ from zm import __version__
 from backend.services.budget_mapper import LOW_MAX, MEDIUM_MAX
 from zm.config import Settings
 from zm.data.repository import RestaurantRepository, get_repository_holder
-from zm.exceptions import DataLoadError
 
 router = APIRouter(tags=["health"])
 
 
 def _repository_status() -> tuple[bool, int]:
-    """Return (data_loaded, restaurant_count); load from cache when possible."""
+    """Return (data_loaded, restaurant_count) without blocking on HF download."""
     holder = get_repository_holder()
     if holder.repository and holder.repository.is_ready():
         return True, holder.repository.count()
-    try:
-        repo = get_restaurant_repository()
+    repo = load_repository_from_cache_only()
+    if repo is not None:
         return True, repo.count()
-    except DataLoadError:
-        return False, 0
+    return False, 0
 
 
 @router.get("/", response_model=ServiceInfoResponse, include_in_schema=False)

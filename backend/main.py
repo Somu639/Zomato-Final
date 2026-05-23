@@ -84,8 +84,8 @@ def _register_not_found_handler(app: FastAPI) -> None:
         path = request.url.path
         hint = (
             "Use the REST API at /api/v1/... (see /docs). "
-            "On Render, start command must be: "
-            "bash scripts/render_start.sh — not zm serve (legacy UI)."
+            "On Render, use start command: "
+            "uvicorn backend.main:create_app --factory --host 0.0.0.0 --port $PORT"
         )
         if path.startswith("/api/v1"):
             hint = "Check the path and HTTP method in /docs."
