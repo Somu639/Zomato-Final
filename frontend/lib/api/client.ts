@@ -6,7 +6,21 @@ import type {
   RecommendationResponse,
 } from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+/** Strip trailing slashes and accidental `/api` suffix (common Render misconfig). */
+function normalizeApiBase(raw: string): string {
+  let base = raw.trim();
+  while (base.endsWith("/")) {
+    base = base.slice(0, -1);
+  }
+  if (base.endsWith("/api")) {
+    base = base.slice(0, -4);
+  }
+  return base;
+}
+
+const API_BASE = normalizeApiBase(
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "",
+);
 
 export class ApiError extends Error {
   status: number;

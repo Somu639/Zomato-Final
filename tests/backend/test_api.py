@@ -34,6 +34,31 @@ def test_health(api_client: TestClient):
     assert body["status"] == "ok"
     assert body["data_loaded"] is True
     assert body["restaurant_count"] == 1
+    assert "groq_configured" in body
+    assert body["version"] == "0.1.0"
+
+
+def test_service_root(api_client: TestClient):
+    response = api_client.get("/")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["service"] == "zm-restaurant-api"
+    assert body["health"] == "/health"
+
+
+def test_api_discovery(api_client: TestClient):
+    response = api_client.get("/api/v1")
+    assert response.status_code == 200
+    assert "locations" in response.json()["endpoints"]
+
+
+def test_not_found_includes_hint(api_client: TestClient):
+    response = api_client.get("/does-not-exist")
+    assert response.status_code == 404
+    body = response.json()
+    assert body["detail"] == "Not Found"
+    assert "try" in body
+    assert body["try"]["health"] == "/health"
 
 
 def test_locations(api_client: TestClient):

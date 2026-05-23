@@ -61,7 +61,8 @@ Config file in repo: [`render.yaml`](../render.yaml) (optional [Blueprint](https
 | **Root Directory** | *(leave empty — repo root)* |
 | **Runtime** | Python 3 |
 | **Build Command** | `pip install -e . && zm load-data` |
-| **Start Command** | `uvicorn backend.main:create_app --factory --host 0.0.0.0 --port $PORT` |
+| **Root Directory** | *(empty — repo root, not `frontend/`)* |
+| **Start Command** | `bash scripts/render_start.sh` |
 | **Health Check Path** | `/health` |
 
 4. **Environment variables** (Render → Environment):
@@ -204,6 +205,9 @@ Redeploy or save env (Render restarts the service).
 
 | Symptom | Likely cause | Fix |
 |---------|----------------|-----|
+| `{"detail":"Not Found"}` on `/health` or `/api/v1/*` | Wrong start command (`zm serve` / legacy UI) or old deploy | Use `bash scripts/render_start.sh`; redeploy from latest `main` |
+| Plain text `Not Found` + header `x-render-routing: no-server` | Service not running or wrong hostname | Create/redploy Web Service; copy URL from Render dashboard |
+| `NEXT_PUBLIC_API_BASE_URL` ends with `/api` | Double path `/api/api/v1/...` → 404 | Use `https://your-service.onrender.com` only (no `/api` suffix) |
 | CORS error in browser | `CORS_ORIGINS` missing Vercel URL | Update Render env |
 | `data_loaded: false` on `/health` | Build skipped `zm load-data` | Fix build command; check logs |
 | 503 on recommendations | Data not loaded | Re-run deploy / build |

@@ -86,6 +86,16 @@ class HealthResponse(BaseModel):
     status: str
     data_loaded: bool
     restaurant_count: int = 0
+    groq_configured: bool = False
+    version: str = "0.1.0"
+
+
+class ServiceInfoResponse(BaseModel):
+    service: str
+    version: str
+    docs: str
+    health: str
+    openapi: str
 
 
 class LocationsResponse(BaseModel):

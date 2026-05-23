@@ -26,7 +26,7 @@ PHASES = [
     ("5a", "backend API", "active"),
     ("5b", "frontend SPA", "active"),
     ("6", "hardening", "active"),
-    ("7", "cloud deploy", "planned"),
+    ("7", "cloud deploy", "active"),
 ]
 
 
@@ -309,8 +309,19 @@ def cmd_api() -> int:
 
 
 def cmd_serve() -> int:
-    """Start the interim Jinja web UI (legacy)."""
+    """Start web server — REST API on Render; legacy Jinja UI locally."""
     settings = get_settings()
+    if settings.is_render:
+        print(
+            "Render detected: starting REST API (backend.main), not legacy Jinja UI.",
+            file=sys.stderr,
+        )
+        print(
+            "Preferred start: bash scripts/render_start.sh",
+            file=sys.stderr,
+        )
+        return cmd_api()
+
     _configure_logging(settings.log_level)
 
     try:
@@ -323,8 +334,9 @@ def cmd_serve() -> int:
     from zm.web import run_server
 
     print(
-        f"Starting web UI at http://{settings.web_host}:{settings.web_port}/"
+        f"Starting legacy web UI at http://{settings.web_host}:{settings.web_port}/"
     )
+    print("Production API: use `zm api` or scripts/render_start.sh", file=sys.stderr)
     run_server(settings)
     return 0
 

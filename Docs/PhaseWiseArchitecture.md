@@ -127,7 +127,7 @@ flowchart LR
 | 5a | Implemented | `backend/` — FastAPI REST API |
 | 5b | Implemented | `frontend/` — Next.js (Vercel) |
 | 6 | Implemented | Docker Compose, cache, rate limits, observability, INR budget |
-| 7 | Planned | [Deployment-Render-Vercel.md](./Deployment-Render-Vercel.md), `render.yaml` |
+| 7 | Implemented | [Deployment-Render-Vercel.md](./Deployment-Render-Vercel.md), `render.yaml`, `backend/startup.py` |
 | 5 (interim / legacy) | Available | `src/zm/web/` (monolithic FastAPI + Jinja, `zm serve`) |
 
 ---

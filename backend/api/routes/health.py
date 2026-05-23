@@ -10,7 +10,9 @@ from backend.api.schemas import (
     HealthResponse,
     LocationsResponse,
     MetadataResponse,
+    ServiceInfoResponse,
 )
+from zm import __version__
 from backend.services.budget_mapper import LOW_MAX, MEDIUM_MAX
 from zm.config import Settings
 from zm.data.repository import RestaurantRepository, get_repository_holder
@@ -19,21 +21,38 @@ from zm.exceptions import DataLoadError
 router = APIRouter(tags=["health"])
 
 
-def _optional_repository() -> RestaurantRepository | None:
+def _repository_status() -> tuple[bool, int]:
+    """Return (data_loaded, restaurant_count); load from cache when possible."""
     holder = get_repository_holder()
     if holder.repository and holder.repository.is_ready():
-        return holder.repository
-    return None
+        return True, holder.repository.count()
+    try:
+        repo = get_restaurant_repository()
+        return True, repo.count()
+    except DataLoadError:
+        return False, 0
+
+
+@router.get("/", response_model=ServiceInfoResponse, include_in_schema=False)
+def service_root() -> ServiceInfoResponse:
+    return ServiceInfoResponse(
+        service="zm-restaurant-api",
+        version=__version__,
+        docs="/docs",
+        health="/health",
+        openapi="/openapi.json",
+    )
 
 
 @router.get("/health", response_model=HealthResponse)
-def health() -> HealthResponse:
-    repo = _optional_repository()
-    ready = repo is not None and repo.is_ready()
+def health(settings: Settings = Depends(get_app_settings)) -> HealthResponse:
+    ready, count = _repository_status()
     return HealthResponse(
         status="ok",
         data_loaded=ready,
-        restaurant_count=repo.count() if ready and repo else 0,
+        restaurant_count=count,
+        groq_configured=settings.has_groq_api_key,
+        version=__version__,
     )
 
 

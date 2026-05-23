@@ -4,7 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from zm.exceptions import ConfigurationError
@@ -48,7 +48,16 @@ class Settings(BaseSettings):
     log_level: LogLevel = Field(default="INFO", validation_alias="LOG_LEVEL")
 
     web_host: str = Field(default="127.0.0.1", validation_alias="WEB_HOST")
-    web_port: int = Field(default=8000, ge=1, le=65535, validation_alias="WEB_PORT")
+    web_port: int = Field(
+        default=8000,
+        ge=1,
+        le=65535,
+        validation_alias=AliasChoices("PORT", "WEB_PORT"),
+    )
+    render: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("RENDER", "IS_RENDER"),
+    )
     cors_origins: str = Field(
         default=(
             "http://localhost:3000,http://127.0.0.1:3000,"
@@ -73,6 +82,22 @@ class Settings(BaseSettings):
     def cors_origins_list(self) -> list[str]:
         """Parsed CORS allowlist for the React dev server (Phase 5a)."""
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def is_render(self) -> bool:
+        """True when running on Render (``RENDER=true`` is set automatically)."""
+        return self.render
+
+    @property
+    def has_only_local_cors_origins(self) -> bool:
+        """True when every CORS origin is localhost (typical pre-Vercel setup)."""
+        if not self.cors_origins_list:
+            return True
+        local_markers = ("localhost", "127.0.0.1")
+        return all(
+            any(marker in origin for marker in local_markers)
+            for origin in self.cors_origins_list
+        )
 
     @field_validator("groq_api_key", mode="before")
     @classmethod
@@ -130,6 +155,7 @@ class Settings(BaseSettings):
             "log_level": self.log_level,
             "web_host": self.web_host,
             "web_port": self.web_port,
+            "is_render": self.is_render,
             "cors_origins": self.cors_origins_list,
             "recommendation_cache_ttl_seconds": (
                 self.recommendation_cache_ttl_seconds
@@ -142,3 +168,8 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Cached settings singleton."""
     return Settings()
+
+
+def clear_settings_cache() -> None:
+    """Reset cached settings (tests and config reload)."""
+    get_settings.cache_clear()

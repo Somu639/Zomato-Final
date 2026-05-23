@@ -1,6 +1,6 @@
 import pytest
 
-from zm.config.settings import Settings
+from zm.config.settings import Settings, clear_settings_cache
 from zm.exceptions import ConfigurationError
 
 
@@ -36,7 +36,24 @@ def test_redacted_summary_never_includes_api_key(monkeypatch):
     assert summary["web_port"] == 8000
 
 
-def test_web_bind_defaults():
+def test_web_bind_defaults(monkeypatch):
+    monkeypatch.delenv("PORT", raising=False)
+    monkeypatch.delenv("WEB_PORT", raising=False)
     settings = Settings()
     assert settings.web_host == "127.0.0.1"
     assert settings.web_port == 8000
+
+
+def test_port_env_overrides_web_port(monkeypatch):
+    monkeypatch.setenv("PORT", "10000")
+    monkeypatch.setenv("WEB_PORT", "8000")
+    clear_settings_cache()
+    settings = Settings()
+    assert settings.web_port == 10000
+
+
+def test_render_detection(monkeypatch):
+    monkeypatch.setenv("RENDER", "true")
+    clear_settings_cache()
+    settings = Settings()
+    assert settings.is_render is True
