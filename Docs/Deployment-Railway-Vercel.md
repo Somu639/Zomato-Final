@@ -35,20 +35,20 @@ flowchart LR
 ### 1.1 What gets deployed
 
 - Entry: `backend/main.py` → `uvicorn backend.main:create_app --factory`
-- Config: [`railway.toml`](../railway.toml), [`Procfile`](../Procfile), [`nixpacks.toml`](../nixpacks.toml)
-- Build: `pip install -e .` (from root `requirements.txt`)
+- Config: [`railway.toml`](../railway.toml), [`Dockerfile`](../Dockerfile), [`Procfile`](../Procfile)
+- Build: Docker image (`python -m pip install -e .` inside `Dockerfile`)
 - Data: loads from cache if present; otherwise downloads in a **background thread** after the server starts (deploy health check stays fast)
 
 ### 1.2 Create the service (Dashboard)
 
 1. [Railway Dashboard](https://railway.com/new) → **Deploy from GitHub repo** → **Somu639/Zomato-Final**, branch `main`.
 2. **Root directory**: leave empty (repository root — not `frontend/`).
-3. Railway auto-detects Python via Nixpacks; config is overridden by `railway.toml` if present.
+3. Railway builds from the root [`Dockerfile`](../Dockerfile) (see `railway.toml`).
 
 | Setting | Value |
 |---------|--------|
-| **Build Command** | `pip install -e .` |
-| **Start Command** | `uvicorn backend.main:create_app --factory --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips='*'` |
+| **Builder** | Dockerfile (auto via `railway.toml`) |
+| **Start Command** | From Dockerfile `CMD` (uvicorn on `$PORT`) |
 | **Health Check** | `/health` |
 
 4. **Variables** (Railway → service → Variables):
@@ -125,7 +125,7 @@ Redeploy or wait for Railway to restart the service.
 ### Backend (Railway)
 
 - [ ] Service deployed from repo root on `main`
-- [ ] Build: `pip install -e .` succeeds
+- [ ] Docker build from root `Dockerfile` succeeds
 - [ ] Public domain generated
 - [ ] `GROQ_API_KEY` set
 - [ ] `/health` returns 200
@@ -155,7 +155,8 @@ Redeploy or wait for Railway to restart the service.
 
 | Symptom | Likely cause | Fix |
 |---------|----------------|-----|
-| Deploy failed / health timeout | Build blocked on dataset download | Use latest `main` (background prefetch); build is `pip install -e .` only |
+| Deploy failed / health timeout | Build blocked on dataset download | Use latest `main` (background prefetch) |
+| **`pip install -e .` exit code 127** | Nixpacks had no `pip` on PATH | Use root `Dockerfile` build (current `main`) |
 | `{"detail":"Not Found"}` on `/api/v1/*` | Wrong start command or legacy `zm serve` | Use uvicorn start command above |
 | `NEXT_PUBLIC_API_BASE_URL` ends with `/api` | Double path → 404 | Use Railway domain only |
 | CORS error | Missing Vercel URL in `CORS_ORIGINS` | Update Railway variables |

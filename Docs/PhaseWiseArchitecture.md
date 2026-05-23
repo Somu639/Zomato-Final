@@ -538,7 +538,8 @@ flowchart LR
 |------|---------|
 | `railway.toml` | Railway config-as-code |
 | `Procfile` | Start command for Nixpacks |
-| `nixpacks.toml` | Python 3.11 + install steps |
+| `Dockerfile` | Production Docker build for Railway |
+| `Procfile` | Optional start hint |
 | `requirements.txt` | Python deps for Railway (`-e .`) |
 | `frontend/vercel.json` | Vercel project hints |
 | `frontend/.env.example` | `NEXT_PUBLIC_API_BASE_URL` template |
@@ -598,7 +599,7 @@ ZM/
 ├── frontend/                # Phase 5b / 6 — Next.js UI
 │   ├── app/
 │   └── package.json
-├── nixpacks.toml            # Phase 7 — Nixpacks (Python 3.11)
+├── Dockerfile               # Phase 7 — Railway production build
 ├── src/zm/                  # Phases 0–4 core (library)
 │   ├── config/
 │   ├── models/

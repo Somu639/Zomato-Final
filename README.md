@@ -54,7 +54,7 @@ If GitHub shows **Bad credentials** / **repository not authorized** when connect
 
 | Service | Platform | Config |
 |---------|----------|--------|
-| Backend | [Railway](https://railway.com) | `railway.toml`, `Procfile`, `requirements.txt` |
+| Backend | [Railway](https://railway.com) | `railway.toml`, `Dockerfile`, `requirements.txt` |
 | Frontend | [Vercel](https://vercel.com) | Root dir `frontend/`, `NEXT_PUBLIC_API_BASE_URL` |
 
 ### Docker (local / optional)
@@ -88,7 +88,8 @@ See [.env.example](.env.example) for the full list.
 backend/             # FastAPI REST API (Railway)
 frontend/            # Next.js App Router (Vercel)
 railway.toml         # Railway config
-Procfile             # Railway / Nixpacks start command
+Dockerfile           # Railway production build
+Procfile             # Optional start hint
 requirements.txt     # Python deps for Railway
 src/zm/              # Core library (Phases 0–4)
 Docs/                # Architecture + deployment guides

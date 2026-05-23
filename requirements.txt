@@ -1,2 +1,2 @@
-# Production API (Railway) and local install
+# Production API (Railway) — explicit deps for Nixpacks fallback
 -e .
