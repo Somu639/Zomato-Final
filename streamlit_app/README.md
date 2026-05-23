@@ -38,8 +38,7 @@ GROQ_API_KEY = "your-key"
 
 ```toml
 GROQ_API_KEY = "..."
-# optional
-GROQ_MODEL = "llama-3.3-70b-versatile"
+# optional — cache path only; model/top-k use repo defaults (not exposed in UI)
 DATASET_CACHE_DIR = "data/cache"
 ```
 
