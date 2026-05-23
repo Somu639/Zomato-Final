@@ -33,7 +33,7 @@ GROQ_API_KEY = "your-key"
 
 1. Push repo to GitHub (include `data/cache/restaurants_v1.jsonl` or run load on first deploy).
 2. [Create app](https://streamlit.io/cloud) → **Main file:** `streamlit_app/app.py`
-3. **Requirements:** `requirements-streamlit.txt` (or set `packages.txt` → that file).
+3. **Requirements:** `requirements.txt` at repo root (pip). Do **not** list pip files in `packages.txt` — that file is only for apt system packages.
 4. **Secrets** (Settings → Secrets):
 
 ```toml

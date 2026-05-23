@@ -581,8 +581,8 @@ streamlit_app/                # Named streamlit_app (avoids PyPI streamlit impor
 └── README.md                 # Deploy steps for Streamlit Cloud
 
 .streamlit/config.toml        # Theme (dark) at repo root
-requirements-streamlit.txt
-packages.txt                  # Streamlit Cloud → requirements file
+requirements.txt              # Streamlit Cloud pip dependencies (repo root)
+requirements-streamlit.txt    # Local: pip install -r requirements-streamlit.txt
 
 # Repo root (deployment)
 ├── requirements-streamlit.txt  # zm + streamlit (+ optional pins)

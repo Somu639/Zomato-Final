@@ -1,3 +1,2 @@
-# Phase 7 — Streamlit Cloud / pip install -r requirements-streamlit.txt
--e .
-streamlit>=1.39,<2
+# Alias for local installs. Streamlit Cloud uses requirements.txt at repo root.
+-r requirements.txt
