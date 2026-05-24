@@ -96,13 +96,19 @@ Aligns with [Problemstatement1.md](./Problemstatement1.md) §2 (user input) and 
 
 ### 2.1 What gets deployed
 
-- Root directory: **`frontend/`**
+- **Important:** Vercel must build the **Next.js app**, not the Python API. The API runs on **Railway** only.
+- Root directory: **`frontend/`** (recommended) **OR** repo root with root [`vercel.json`](../vercel.json) (builds `frontend/` automatically).
 - Framework: **Next.js** (App Router)
 - UI: preference form → ranked cards (name, cuisine, rating, cost, AI explanation)
 - Production calls Railway via **`NEXT_PUBLIC_API_BASE_URL`**
 
+### 2.2 Create the project
+
 1. [Vercel Dashboard](https://vercel.com/new) → Import **Somu639/Zomato-Final**.
-2. **Root Directory** → `frontend`.
+2. **Root Directory** → set to **`frontend`** (recommended).
+
+   If you leave Root Directory empty, the repo root [`vercel.json`](../vercel.json) forces a Next.js build (avoids the FastAPI / `backend/main.py` detection error).
+
 3. **Environment variable**:
 
 | Key | Value |
@@ -111,7 +117,7 @@ Aligns with [Problemstatement1.md](./Problemstatement1.md) §2 (user input) and 
 
 4. Deploy.
 
-### 2.2 Local dev
+### 2.3 Local dev
 
 Leave `NEXT_PUBLIC_API_BASE_URL` empty; `next.config.ts` proxies `/api` to `http://127.0.0.1:8000`.
 
@@ -164,12 +170,14 @@ Redeploy or wait for Railway to restart the service.
 
 | Symptom | Likely cause | Fix |
 |---------|----------------|-----|
+| **No FastAPI entrypoint** / `backend/main.py` on Vercel | Vercel detected Python at repo root | Set **Root Directory** = `frontend`, or use root `vercel.json` on `main` |
 | Deploy failed / health timeout | Build blocked on dataset download | Use latest `main` (background prefetch) |
 | **`pip install -e .` exit code 127** | Nixpacks had no `pip` on PATH | Use root `Dockerfile` build (current `main`) |
 | **Root shows `zm-restaurant-api` JSON** | Normal API root (not an error) | Open `/docs` or `/api/v1/locations`; wait if `data_loaded` is false |
 | **`data_loaded: false` on `/health`** | First deploy downloading dataset | Wait 1–3 min; recheck `/health` |
 | `{"detail":"Not Found"}` on `/api/v1/*` | Wrong start command or legacy `zm serve` | Use uvicorn start command above |
 | `NEXT_PUBLIC_API_BASE_URL` ends with `/api` | Double path → 404 | Use Railway domain only |
+| **Vercel builds FastAPI instead of Next.js** | Root Directory not set to `frontend` | Project Settings → Root Directory → `frontend` |
 | CORS error | Missing Vercel URL in `CORS_ORIGINS` | Update Railway variables |
 | `data_loaded: false` | Cache still downloading | Wait 1–2 min; check Railway logs |
 | Groq fallback only | Missing `GROQ_API_KEY` on Railway | Set variable in Railway |
