@@ -105,9 +105,16 @@ Aligns with [Problemstatement1.md](./Problemstatement1.md) §2 (user input) and 
 ### 2.2 Create the project
 
 1. [Vercel Dashboard](https://vercel.com/new) → Import **Somu639/Zomato-Final**.
-2. **Root Directory** → set to **`frontend`** (recommended).
+2. **Root Directory** → **`frontend`** (required — this is where `package.json` with `next` lives).
 
-   If you leave Root Directory empty, the repo root [`vercel.json`](../vercel.json) forces a Next.js build (avoids the FastAPI / `backend/main.py` detection error).
+   | Setting | Value |
+   |---------|--------|
+   | Root Directory | `frontend` |
+   | Framework | Next.js (auto-detected) |
+   | Build Command | *(default)* `npm run build` |
+   | Install Command | *(default)* `npm install` |
+
+   Do **not** leave Root Directory empty unless you use the repo-root `vercel.json` fallback on latest `main`.
 
 3. **Environment variable**:
 
@@ -170,7 +177,8 @@ Redeploy or wait for Railway to restart the service.
 
 | Symptom | Likely cause | Fix |
 |---------|----------------|-----|
-| **No FastAPI entrypoint** / `backend/main.py` on Vercel | Vercel detected Python at repo root | Set **Root Directory** = `frontend`, or use root `vercel.json` on `main` |
+| **No Next.js version detected** | Root Directory is not `frontend` | Settings → Root Directory → `frontend` (must match `frontend/package.json`) |
+| **No FastAPI entrypoint** / `backend/main.py` on Vercel | Vercel detected Python at repo root | Set **Root Directory** = `frontend` |
 | Deploy failed / health timeout | Build blocked on dataset download | Use latest `main` (background prefetch) |
 | **`pip install -e .` exit code 127** | Nixpacks had no `pip` on PATH | Use root `Dockerfile` build (current `main`) |
 | **Root shows `zm-restaurant-api` JSON** | Normal API root (not an error) | Open `/docs` or `/api/v1/locations`; wait if `data_loaded` is false |
