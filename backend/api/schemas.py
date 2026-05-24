@@ -91,11 +91,16 @@ class HealthResponse(BaseModel):
 
 
 class ServiceInfoResponse(BaseModel):
+    status: str = "ok"
     service: str
     version: str
+    data_loaded: bool = False
+    restaurant_count: int = 0
+    message: str
     docs: str
     health: str
     openapi: str
+    endpoints: dict[str, str]
 
 
 class LocationsResponse(BaseModel):

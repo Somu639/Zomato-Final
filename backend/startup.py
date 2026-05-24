@@ -25,17 +25,10 @@ def bootstrap_repository(settings: Settings | None = None) -> int | None:
     if repo is not None:
         return repo.count()
 
-    if settings.is_cloud_deploy:
-        prefetch_repository_in_background(settings)
-        logger.info(
-            "No local cache yet; API will serve /health immediately "
-            "and load data in the background"
-        )
-    else:
-        logger.warning(
-            "No restaurant cache at startup. Run `zm load-data` or wait for "
-            "the first API request to build the dataset."
-        )
+    prefetch_repository_in_background(settings)
+    logger.info(
+        "No local cache yet; serving /health immediately while data loads in background"
+    )
     return None
 
 

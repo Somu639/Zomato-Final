@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import RedirectResponse
 
 from backend.api.deps import get_app_settings, get_restaurant_repository
 from backend.data_loader import load_repository_from_cache_only
@@ -32,14 +33,36 @@ def _repository_status() -> tuple[bool, int]:
     return False, 0
 
 
-@router.get("/", response_model=ServiceInfoResponse, include_in_schema=False)
-def service_root() -> ServiceInfoResponse:
+@router.get("/", include_in_schema=False, response_model=None)
+def service_root(request: Request) -> ServiceInfoResponse | RedirectResponse:
+    ready, count = _repository_status()
+    accept = request.headers.get("accept", "")
+    if "text/html" in accept and "application/json" not in accept:
+        return RedirectResponse(url="/docs", status_code=302)
+
+    message = (
+        "ZM Restaurant API is running. Use /docs to try endpoints."
+        if ready
+        else (
+            "API is up; restaurant data is still loading (1–3 min on first deploy). "
+            "Check /health until data_loaded is true, then call /api/v1/locations."
+        )
+    )
     return ServiceInfoResponse(
+        status="ok",
         service="zm-restaurant-api",
         version=__version__,
+        data_loaded=ready,
+        restaurant_count=count,
+        message=message,
         docs="/docs",
         health="/health",
         openapi="/openapi.json",
+        endpoints={
+            "locations": "/api/v1/locations",
+            "metadata": "/api/v1/metadata",
+            "recommendations": "POST /api/v1/recommendations",
+        },
     )
 
 

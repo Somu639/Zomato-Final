@@ -39,11 +39,23 @@ def test_health(api_client: TestClient):
 
 
 def test_service_root(api_client: TestClient):
-    response = api_client.get("/")
+    response = api_client.get("/", headers={"Accept": "application/json"})
     assert response.status_code == 200
     body = response.json()
+    assert body["status"] == "ok"
     assert body["service"] == "zm-restaurant-api"
     assert body["health"] == "/health"
+    assert "locations" in body["endpoints"]
+
+
+def test_service_root_redirects_browser_to_docs(api_client: TestClient):
+    response = api_client.get(
+        "/",
+        headers={"Accept": "text/html"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert response.headers["location"] == "/docs"
 
 
 def test_api_discovery(api_client: TestClient):

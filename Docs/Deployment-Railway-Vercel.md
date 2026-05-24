@@ -68,12 +68,14 @@ Railway sets `PORT` and `RAILWAY_ENVIRONMENT` automatically.
 
 ### 1.3 Verify backend
 
+Open `https://YOUR-SERVICE.up.railway.app/docs` in a browser (root `/` redirects to Swagger).
+
 ```bash
 curl https://YOUR-SERVICE.up.railway.app/health
 curl https://YOUR-SERVICE.up.railway.app/api/v1/locations
 ```
 
-Open `https://YOUR-SERVICE.up.railway.app/docs` for OpenAPI.
+Root `/` returns JSON with `status: "ok"` when requested with `Accept: application/json` — that is **not** an error.
 
 First deploy may return `"data_loaded": false` for 1–2 minutes while the dataset downloads in the background.
 
@@ -157,6 +159,8 @@ Redeploy or wait for Railway to restart the service.
 |---------|----------------|-----|
 | Deploy failed / health timeout | Build blocked on dataset download | Use latest `main` (background prefetch) |
 | **`pip install -e .` exit code 127** | Nixpacks had no `pip` on PATH | Use root `Dockerfile` build (current `main`) |
+| **Root shows `zm-restaurant-api` JSON** | Normal API root (not an error) | Open `/docs` or `/api/v1/locations`; wait if `data_loaded` is false |
+| **`data_loaded: false` on `/health`** | First deploy downloading dataset | Wait 1–3 min; recheck `/health` |
 | `{"detail":"Not Found"}` on `/api/v1/*` | Wrong start command or legacy `zm serve` | Use uvicorn start command above |
 | `NEXT_PUBLIC_API_BASE_URL` ends with `/api` | Double path → 404 | Use Railway domain only |
 | CORS error | Missing Vercel URL in `CORS_ORIGINS` | Update Railway variables |
