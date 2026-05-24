@@ -444,19 +444,10 @@ flowchart LR
 ```
 frontend/
 ├── src/app/                 # Next.js App Router pages
-├── components/
-├── hooks/
-├── lib/api/
-├── next.config.ts
-└── package.json
-```
-│   ├── RecommendPage.tsx
-│   ├── PreferenceForm.tsx
-│   └── ...
-├── lib/api/
-│   ├── client.ts
-│   └── types.ts
-├── next.config.ts           # rewrites /api → backend
+├── components/              # PreferenceForm, RecommendPage, cards
+├── hooks/                   # useApiBootstrap
+├── lib/api/                 # client, types, config
+├── next.config.ts           # dev rewrites /api → backend
 └── package.json
 ```
 
