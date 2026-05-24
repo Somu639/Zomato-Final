@@ -92,7 +92,14 @@ First deploy may return `"data_loaded": false` for 1–2 minutes while the datas
 
 ## Part 2 — Frontend on Vercel
 
-### 2.1 Create the project
+Aligns with [Problemstatement1.md](./Problemstatement1.md) §2 (user input) and §5 (output display).
+
+### 2.1 What gets deployed
+
+- Root directory: **`frontend/`**
+- Framework: **Next.js** (App Router)
+- UI: preference form → ranked cards (name, cuisine, rating, cost, AI explanation)
+- Production calls Railway via **`NEXT_PUBLIC_API_BASE_URL`**
 
 1. [Vercel Dashboard](https://vercel.com/new) → Import **Somu639/Zomato-Final**.
 2. **Root Directory** → `frontend`.

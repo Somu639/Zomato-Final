@@ -443,11 +443,13 @@ flowchart LR
 
 ```
 frontend/
-├── app/
-│   ├── layout.tsx
-│   ├── page.tsx
-│   └── globals.css
+├── src/app/                 # Next.js App Router pages
 ├── components/
+├── hooks/
+├── lib/api/
+├── next.config.ts
+└── package.json
+```
 │   ├── RecommendPage.tsx
 │   ├── PreferenceForm.tsx
 │   └── ...

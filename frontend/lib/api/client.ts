@@ -1,26 +1,12 @@
+import { apiUrl } from "./config";
 import type {
   ErrorResponse,
+  HealthResponse,
   LocationsResponse,
   MetadataResponse,
   RecommendationRequest,
   RecommendationResponse,
 } from "./types";
-
-/** Strip trailing slashes and accidental `/api` suffix (common misconfig). */
-function normalizeApiBase(raw: string): string {
-  let base = raw.trim();
-  while (base.endsWith("/")) {
-    base = base.slice(0, -1);
-  }
-  if (base.endsWith("/api")) {
-    base = base.slice(0, -4);
-  }
-  return base;
-}
-
-const API_BASE = normalizeApiBase(
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "",
-);
 
 export class ApiError extends Error {
   status: number;
@@ -45,8 +31,16 @@ async function parseJson<T>(response: Response): Promise<T> {
   return JSON.parse(text) as T;
 }
 
+export async function fetchHealth(): Promise<HealthResponse> {
+  const response = await fetch(apiUrl("/health"), { cache: "no-store" });
+  if (!response.ok) {
+    throw new ApiError(response.status, "Failed to reach API health endpoint");
+  }
+  return parseJson<HealthResponse>(response);
+}
+
 export async function fetchLocations(): Promise<LocationsResponse> {
-  const response = await fetch(`${API_BASE}/api/v1/locations`, {
+  const response = await fetch(apiUrl("/api/v1/locations"), {
     cache: "no-store",
   });
   if (!response.ok) {
@@ -54,14 +48,14 @@ export async function fetchLocations(): Promise<LocationsResponse> {
     throw new ApiError(
       response.status,
       body?.message ?? "Failed to load locations",
-      body?.errors,
+      body?.errors ?? {},
     );
   }
   return parseJson<LocationsResponse>(response);
 }
 
 export async function fetchMetadata(): Promise<MetadataResponse> {
-  const response = await fetch(`${API_BASE}/api/v1/metadata`, {
+  const response = await fetch(apiUrl("/api/v1/metadata"), {
     cache: "no-store",
   });
   if (!response.ok) {
@@ -73,7 +67,7 @@ export async function fetchMetadata(): Promise<MetadataResponse> {
 export async function postRecommendations(
   body: RecommendationRequest,
 ): Promise<RecommendationResponse> {
-  const response = await fetch(`${API_BASE}/api/v1/recommendations`, {
+  const response = await fetch(apiUrl("/api/v1/recommendations"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

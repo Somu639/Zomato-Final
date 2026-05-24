@@ -1,3 +1,11 @@
+export interface HealthResponse {
+  status: string;
+  data_loaded: boolean;
+  restaurant_count: number;
+  groq_configured: boolean;
+  version: string;
+}
+
 export interface RecommendationRequest {
   location: string;
   budget?: string;

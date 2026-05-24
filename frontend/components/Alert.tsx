@@ -4,5 +4,10 @@ interface AlertProps {
 }
 
 export default function Alert({ variant = "info", children }: AlertProps) {
-  return <div className={`alert alert--${variant}`}>{children}</div>;
+  const role = variant === "error" ? "alert" : "status";
+  return (
+    <div className={`alert alert--${variant}`} role={role}>
+      {children}
+    </div>
+  );
 }

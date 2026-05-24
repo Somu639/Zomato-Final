@@ -161,11 +161,11 @@ Designs should assume these labels and data shapes (not visible raw JSON):
 
 | Stitch / design artifact | Repo path |
 |--------------------------|-----------|
-| Home / main screen | `frontend/app/page.tsx`, `frontend/components/RecommendPage.tsx` |
+| Home / main screen | `frontend/src/app/page.tsx`, `frontend/components/RecommendPage.tsx` |
 | Form | `frontend/components/PreferenceForm.tsx` |
 | Result cards | `frontend/components/RecommendationCard.tsx`, `RecommendationList.tsx` |
 | Alerts | `frontend/components/Alert.tsx` |
-| Global styles / tokens | `frontend/app/globals.css` |
+| Global styles / tokens | `frontend/src/app/globals.css` |
 | API types | `frontend/lib/api/types.ts` |
 | API client | `frontend/lib/api/client.ts` |
 

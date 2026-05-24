@@ -1,41 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import {
-  ApiError,
-  fetchLocations,
-  fetchMetadata,
-  postRecommendations,
-} from "@/lib/api/client";
-import type { MetadataResponse, RecommendationResponse } from "@/lib/api/types";
+import { useCallback, useState } from "react";
+import { ApiError, postRecommendations } from "@/lib/api/client";
+import type { RecommendationResponse } from "@/lib/api/types";
+import { useApiBootstrap } from "@/hooks/useApiBootstrap";
 import Alert from "./Alert";
 import PreferenceForm, { FormValues } from "./PreferenceForm";
 import RecommendationList from "./RecommendationList";
 
 export default function RecommendPage() {
-  const [locations, setLocations] = useState<string[]>([]);
-  const [metadata, setMetadata] = useState<MetadataResponse | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const {
+    locations,
+    metadata,
+    bootstrapping,
+    dataLoading,
+    loadError,
+    dataReady,
+  } = useApiBootstrap();
+
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<RecommendationResponse | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
-
-  useEffect(() => {
-    Promise.all([fetchLocations(), fetchMetadata()])
-      .then(([locRes, metaRes]) => {
-        setLocations(locRes.locations);
-        setMetadata(metaRes);
-        setLoadError(null);
-      })
-      .catch((err: unknown) => {
-        const message =
-          err instanceof ApiError
-            ? err.message
-            : "Could not connect to the API. Run `zm api` after `zm load-data`.";
-        setLoadError(message);
-      });
-  }, []);
 
   const handleSubmit = useCallback(async (values: FormValues) => {
     setLoading(true);
@@ -48,11 +34,17 @@ export default function RecommendPage() {
       .map((c) => c.trim())
       .filter(Boolean);
 
+    if (!cuisines.length) {
+      setFieldErrors({ cuisines: "Enter at least one cuisine." });
+      setLoading(false);
+      return;
+    }
+
     const body: Parameters<typeof postRecommendations>[0] = {
       location: values.location,
       cuisines,
       min_rating: parseFloat(values.min_rating) || 0,
-      additional: values.additional || null,
+      additional: values.additional.trim() || null,
       area: values.area.trim() || null,
     };
 
@@ -91,42 +83,52 @@ export default function RecommendPage() {
     }
   }, []);
 
-  const dataReady = locations.length > 0;
-
   return (
     <div className="page">
       <header className="page__header">
+        <p className="page__eyebrow">Zomato-inspired discovery</p>
         <h1>ZM Restaurant Recommendations</h1>
         <p className="page__subtitle">
-          Next.js UI · structured filters and Groq explanations
+          Tell us your location, budget, cuisine, and minimum rating — we filter
+          real restaurant data and rank matches with AI explanations.
         </p>
       </header>
 
       {loadError && <Alert variant="error">{loadError}</Alert>}
-      {!dataReady && !loadError && (
+      {bootstrapping && !loadError && (
+        <Alert variant="info">Connecting to the recommendation API…</Alert>
+      )}
+      {dataLoading && !loadError && (
         <Alert variant="warning">
-          Loading… Run <code>zm load-data</code> then <code>zm api</code>.
+          Restaurant data is loading on the server (first deploy may take 1–3
+          minutes). This page will update automatically.
+        </Alert>
+      )}
+      {!dataReady && !loadError && !bootstrapping && !dataLoading && (
+        <Alert variant="warning">
+          No cities available yet. Ensure the Railway API has finished loading
+          data, then refresh.
         </Alert>
       )}
       {banner && <Alert variant="warning">{banner}</Alert>}
 
       <div className="page__layout">
-        <section className="page__panel">
-          <h2>Your preferences</h2>
+        <section className="page__panel" aria-labelledby="prefs-heading">
+          <h2 id="prefs-heading">Your preferences</h2>
           <PreferenceForm
             locations={locations}
             budgets={metadata?.budgets ?? ["low", "medium", "high"]}
             exampleCuisines={metadata?.example_cuisines ?? []}
             budgetInrBands={metadata?.budget_inr_bands}
-            disabled={!dataReady}
+            disabled={!dataReady || bootstrapping}
             loading={loading}
             errors={fieldErrors}
             onSubmit={handleSubmit}
           />
         </section>
 
-        <section className="page__panel">
-          <h2>Recommendations</h2>
+        <section className="page__panel" aria-labelledby="results-heading">
+          <h2 id="results-heading">Recommendations</h2>
           {loading && <p className="loading">Searching and ranking…</p>}
           {result && (
             <RecommendationList
@@ -137,10 +139,19 @@ export default function RecommendPage() {
             />
           )}
           {!loading && !result && (
-            <p className="empty">Submit the form to see ranked restaurants.</p>
+            <p className="empty">
+              Submit your preferences to see top picks with name, cuisine,
+              rating, estimated cost, and an AI explanation for each.
+            </p>
           )}
         </section>
       </div>
+
+      <footer className="page__footer">
+        <p>
+          Powered by structured filters + Groq · API on Railway · UI on Vercel
+        </p>
+      </footer>
     </div>
   );
 }

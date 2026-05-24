@@ -32,7 +32,7 @@ const defaultValues: FormValues = {
   budget_inr: "2000",
   use_inr: true,
   cuisines: "",
-  min_rating: "4",
+  min_rating: "4.0",
   additional: "",
   area: "",
 };
@@ -170,14 +170,18 @@ export default function PreferenceForm({
       </div>
 
       <div className="form__field">
-        <label htmlFor="additional">Additional notes</label>
+        <label htmlFor="additional">Additional preferences</label>
         <textarea
           id="additional"
           rows={3}
+          placeholder="e.g. family-friendly, quick service, outdoor seating, dietary needs"
           value={values.additional}
           onChange={(e) => set("additional", e.target.value)}
           disabled={disabled || loading}
         />
+        <p className="form__hint">
+          Optional — area hints, ambiance, or budget for two in notes
+        </p>
       </div>
 
       {errors._form && <Alert variant="error">{errors._form}</Alert>}
