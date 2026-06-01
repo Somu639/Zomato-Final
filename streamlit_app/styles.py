@@ -66,11 +66,12 @@ div[data-testid="stFormSubmitButton"] > button:hover {{
   background-color: {ZOMATO_RED} !important;
 }}
 
-/* Top bar */
+/* Top bar — avoid negative margins that clip content on Cloud */
 .z-header {{
   background: linear-gradient(135deg, {ZOMATO_RED} 0%, {ZOMATO_RED_DARK} 100%);
-  margin: -1rem -1rem 1.5rem -1rem;
+  margin: 0 0 1.5rem 0;
   padding: 1rem 1.5rem 1.25rem;
+  border-radius: 12px;
   box-shadow: 0 2px 12px rgba(226, 55, 68, 0.25);
 }}
 .z-logo {{

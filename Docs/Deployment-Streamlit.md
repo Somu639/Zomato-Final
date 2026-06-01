@@ -62,7 +62,7 @@ GROQ_API_KEY = "your-groq-key"
 
 | Setting | Value |
 |---------|--------|
-| **Main file** | `streamlit_app/app.py` |
+| **Main file** | `Home.py` (recommended) or `streamlit_app/app.py` |
 | **Python** | 3.11 (`.python-version` in repo) |
 
 The repo includes `.streamlit/config.toml` (`headless`, `0.0.0.0`) and `.streamlit/credentials.toml` (skips the email prompt). If deploy fails with **connection refused on :8501**, redeploy after pulling latest `main`.

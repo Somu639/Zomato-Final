@@ -1,5 +1,8 @@
 """
 ZM / Zomato-style restaurant recommendations — Streamlit (Phase 7).
+
+Streamlit Cloud executes this file as a module (not __main__), so main() must run
+unconditionally at the bottom — do not guard with if __name__ == "__main__".
 """
 
 from __future__ import annotations
@@ -30,10 +33,7 @@ from zm.exceptions import ConfigurationError, DataLoadError, ValidationError
 
 
 def _apply_streamlit_secrets() -> None:
-    """Load Streamlit Cloud secrets into os.environ when available.
-
-    Local dev uses repo-root ``.env`` via ``get_settings()`` — no secrets.toml required.
-    """
+    """Load Streamlit Cloud secrets into os.environ when available."""
     try:
         from streamlit.errors import StreamlitSecretNotFoundError
     except ImportError:
@@ -70,19 +70,29 @@ def main() -> None:
     )
     inject_styles()
     _apply_streamlit_secrets()
+
+    # Always paint the shell first so Cloud never shows a blank page while data loads.
+    render_header(None)
+    status = st.empty()
+    status.info(
+        "Loading restaurant data… First deploy on Streamlit Cloud can take 2–3 minutes."
+    )
+
     settings = get_settings()
+    repo = None
+    locations: list[str] = []
+    data_error: str | None = None
 
     try:
         repo = load_repository()
         locations = repo.get_known_locations()
-        data_error = None
+        status.empty()
     except (DataLoadError, ConfigurationError) as exc:
-        repo = None
-        locations = []
+        status.error(str(exc))
         data_error = str(exc)
 
-    location_hint = locations[0] if locations else None
-    render_header(location_hint)
+    if locations:
+        render_header(locations[0])
 
     if data_error:
         st.error(data_error)
@@ -90,9 +100,8 @@ def main() -> None:
     col_filters, col_list = st.columns([5, 7], gap="medium")
 
     with col_filters:
-        st.markdown('<div class="z-filter-box">', unsafe_allow_html=True)
-        pref_input = render_preference_form(locations)
-        st.markdown("</div>", unsafe_allow_html=True)
+        with st.container(border=True):
+            pref_input = render_preference_form(locations)
 
     with col_list:
         if pref_input is None or repo is None:
@@ -115,5 +124,5 @@ def main() -> None:
         render_results(outcome)
 
 
-if __name__ == "__main__":
-    main()
+# Streamlit Cloud runs this script as a module — __name__ is not "__main__".
+main()
