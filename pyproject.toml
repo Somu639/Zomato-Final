@@ -17,6 +17,7 @@ dependencies = [
     "python-multipart>=0.0.9,<1",
     "jinja2>=3.1,<4",
     "groq>=0.11,<1",
+    "streamlit>=1.39,<2",
 ]
 
 [project.optional-dependencies]
@@ -33,7 +34,7 @@ packages = ["src/zm"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src", "."]
+pythonpath = ["src"]
 addopts = "-m 'not integration'"
 markers = [
     "integration: live Hugging Face download (slow)",

@@ -2,110 +2,56 @@
 
 Zomato-inspired recommendation service combining structured restaurant data with an LLM.
 
-**Current status:** Phases **0–6** implemented locally; **Phase 7** production deploy on **Railway** (API) + **Vercel** (Next.js UI).
+**Local dev:** FastAPI backend + Next.js frontend (no Streamlit required).
 
-**Input channel:** Next.js frontend → FastAPI backend. The `zm` CLI is for developers only.
+## Quick start (Windows)
 
-## Quick start
+Double-click **`run-dev.bat`** — opens backend and frontend in two windows.
 
-```bash
-python -m venv .venv
-.venv\Scripts\activate          # Windows
-# source .venv/bin/activate     # macOS/Linux
+Or manually in **two terminals**:
 
-pip install -e ".[dev]"
-copy .env.example .env          # Windows
-# cp .env.example .env          # macOS/Linux
+```powershell
+# Terminal 1 — backend
+cd c:\Users\din17512\Music\ZM
+pip install -e .
+python -m zm load-data          # first time only
+python -m zm api                # http://127.0.0.1:8000  (/docs for API)
 
-zm check
-zm load-data
-zm data-stats
+# Terminal 2 — frontend
+cd c:\Users\din17512\Music\ZM\frontend
+npm install                     # first time only
+npm run dev                     # http://localhost:3000
 ```
 
-### Local development (API + frontend)
+Open **http://localhost:3000** in your browser.
 
-```bash
-zm load-data    # required once
-zm api          # http://127.0.0.1:8000/
-```
+The frontend proxies `/api/*` and `/health` to the backend via `frontend/next.config.ts`.
 
-In a second terminal:
+## Environment
 
-```bash
-cd frontend
-npm install
-npm run dev     # http://localhost:3000/
-```
+Copy `.env.example` to `.env` and set `GROQ_API_KEY` (repo root — used by the backend).
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /health` | Liveness + data loaded |
-| `GET /api/v1/locations` | Cities for dropdown |
-| `GET /api/v1/metadata` | Budget bands, example cuisines |
-| `POST /api/v1/recommendations` | Full pipeline → ranked JSON |
-
-OpenAPI: http://127.0.0.1:8000/docs
-
-### Production deployment (Railway + Vercel)
-
-Step-by-step guide: **[Docs/Deployment-Railway-Vercel.md](Docs/Deployment-Railway-Vercel.md)**
-
-If GitHub shows **Bad credentials** / **repository not authorized** when connecting Railway or Vercel, use **[scripts/DEPLOY-GITHUB-WORKAROUND.md](scripts/DEPLOY-GITHUB-WORKAROUND.md)** (CLI deploy bypass).
-
-| Service | Platform | Config |
-|---------|----------|--------|
-| Backend | [Railway](https://railway.com) | `railway.toml`, `Dockerfile`, `requirements.txt` |
-| Frontend | [Vercel](https://vercel.com) | Root dir `frontend/`, `NEXT_PUBLIC_API_BASE_URL` |
-
-### Docker (local / optional)
-
-```bash
-docker compose up --build
-```
-
-### Legacy Jinja UI
-
-```bash
-zm serve        # http://127.0.0.1:8000/ — interim monolithic UI
-```
-
-## Environment variables
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `GROQ_API_KEY` | For AI (Railway/local) | — | Groq API key |
-| `GROQ_MODEL` | No | `llama-3.3-70b-versatile` | Groq model |
-| `CORS_ORIGINS` | Railway prod | `http://localhost:3000,...` | Include your Vercel URL |
-| `NEXT_PUBLIC_API_BASE_URL` | Vercel prod | — | Railway API URL (see `frontend/.env.example`) |
-| `DATASET_CACHE_DIR` | No | `data/cache` | Restaurant cache |
-| `WEB_HOST` / `WEB_PORT` | No | `127.0.0.1` / `8000` | Local API bind |
-
-See [.env.example](.env.example) for the full list.
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `GROQ_API_KEY` | For AI rankings | Groq API key |
+| `DATASET_CACHE_DIR` | No | `data/cache` |
 
 ## Project layout
 
 ```
-backend/             # FastAPI REST API (Railway)
-frontend/            # Next.js App Router (Vercel)
-railway.toml         # Railway config
-Dockerfile           # Railway production build
-Procfile             # Optional start hint
-requirements.txt     # Python deps for Railway
-src/zm/              # Core library (Phases 0–4)
-Docs/                # Architecture + deployment guides
+backend/             # FastAPI REST API (:8000)
+frontend/            # Next.js UI (:3000)
+src/zm/              # Core library
+streamlit_app/       # Optional Streamlit UI (not used for local dev)
 ```
 
-## Documentation
+## Optional: Streamlit
 
-- [Deployment: Railway + Vercel](Docs/Deployment-Railway-Vercel.md)
-- [Phase-wise architecture](Docs/PhaseWiseArchitecture.md)
-- [Problem statement](Docs/Problemstatement1.md)
-- [Edge cases](Docs/EdgeCases.md)
-- [Google Stitch UI prompt](Docs/GoogleStitch-UI-Prompt.md)
+Not needed for local dev. To run anyway: `python -m zm streamlit` → http://127.0.0.1:8501
 
 ## Development
 
 ```bash
 pytest
-zm check
+python -m zm check
 ```

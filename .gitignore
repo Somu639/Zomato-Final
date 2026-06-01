@@ -1,7 +1,6 @@
 .env
 **/.env
 data/.env
-frontend/.env.local
 .venv/
 venv/
 __pycache__/
@@ -15,6 +14,7 @@ build/
 *.egg-info/
 .cache/
 data/cache/
+.streamlit/secrets.toml
 frontend/node_modules/
 frontend/.next/
 frontend/out/

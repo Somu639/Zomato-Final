@@ -23,10 +23,8 @@ PHASES = [
     ("2", "input", "active"),
     ("3", "integration", "active"),
     ("4", "engine", "active"),
-    ("5a", "backend API", "active"),
-    ("5b", "frontend SPA", "active"),
-    ("6", "hardening", "active"),
-    ("7", "cloud deploy", "active"),
+    ("5", "Streamlit UI", "active"),
+    ("7", "cloud deploy (Streamlit Cloud)", "active"),
 ]
 
 
@@ -72,12 +70,11 @@ def cmd_check() -> int:
     print(f"Cache directory: {cache_path} (writable)")
     print(f"Groq configured: {settings.has_groq_api_key}")
     print(f"Dataset: {settings.hf_dataset_id}")
-    print(f"API / interim UI: http://{settings.web_host}:{settings.web_port}")
-    print("  `zm api` — REST backend (Phase 5a)")
-    print("  `zm serve` — interim Jinja UI (legacy)")
-    print("  Frontend: `cd frontend && npm run dev` (Next.js, :3000)")
-    print("  Deploy: Railway (API) + Vercel (UI) — see Docs/Deployment-Railway-Vercel.md")
-    print("Input channel: Next.js on Vercel → FastAPI on Railway (CLI is dev-only)")
+    print("  `python -m zm api` — FastAPI backend (:8000)")
+    print("  `cd frontend && npm run dev` — Next.js UI (:3000)")
+    print("  `python -m zm streamlit` — Streamlit UI (:8501, optional)")
+    print("  Local stack: .\\run-dev.bat")
+    print("Input channel: Next.js → FastAPI (local dev)")
 
     from zm.data.cache import cache_paths, load_cache
 
@@ -276,8 +273,15 @@ def cmd_recommend(
     return 0
 
 
+def _port_open(host: str, port: int) -> bool:
+    import socket
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.settimeout(0.5)
+        return sock.connect_ex((host, port)) == 0
+
+
 def _ensure_project_root_on_path() -> None:
-    """Allow ``import backend`` when running the editable ``zm`` CLI."""
     root = Path(__file__).resolve().parents[2]
     root_str = str(root)
     if root_str not in sys.path:
@@ -285,10 +289,19 @@ def _ensure_project_root_on_path() -> None:
 
 
 def cmd_api() -> int:
-    """Start the REST API backend (Phase 5a)."""
+    """Start FastAPI REST backend (local dev with Next.js frontend)."""
     _ensure_project_root_on_path()
     settings = get_settings()
     _configure_logging(settings.log_level)
+
+    host = settings.web_host
+    port = settings.web_port
+    url = f"http://{host}:{port}/"
+
+    if _port_open(host, port):
+        print(f"API already running at {url}")
+        print(f"Docs: {url}docs")
+        return 0
 
     try:
         settings.ensure_cache_dir()
@@ -299,29 +312,57 @@ def cmd_api() -> int:
 
     from backend.main import run_server
 
-    print(
-        f"Starting API at http://{settings.web_host}:{settings.web_port}/"
-    )
-    print(f"OpenAPI docs: http://{settings.web_host}:{settings.web_port}/docs")
-    print(f"CORS origins: {', '.join(settings.cors_origins_list)}")
+    print(f"Starting API at {url}")
+    print(f"OpenAPI docs: {url}docs")
+    print("Pair with frontend: cd frontend && npm run dev  →  http://localhost:3000")
     run_server()
     return 0
 
 
-def cmd_serve() -> int:
-    """Start web server — REST API on Railway; legacy Jinja UI locally."""
-    settings = get_settings()
-    if settings.is_railway:
+def cmd_streamlit() -> int:
+    """Start Streamlit UI (Phase 7 production)."""
+    _configure_logging(get_settings().log_level)
+    try:
+        import streamlit.web.cli as stcli
+    except ImportError:
         print(
-            "Railway detected: starting REST API (backend.main), not legacy Jinja UI.",
+            "Streamlit is not installed. Run: pip install -e .",
             file=sys.stderr,
         )
-        print(
-            "Preferred start: see railway.toml / Procfile",
-            file=sys.stderr,
-        )
-        return cmd_api()
+        return 1
 
+    app_path = Path(__file__).resolve().parents[2] / "streamlit_app" / "app.py"
+    if not app_path.is_file():
+        print(f"Missing Streamlit entry: {app_path}", file=sys.stderr)
+        return 1
+
+    host = "127.0.0.1"
+    port = 8501
+    url = f"http://{host}:{port}/"
+
+    if _port_open(host, port):
+        print(f"Streamlit is already running at {url}")
+        print("Open that URL in your browser.")
+        return 0
+
+    print(f"Starting Streamlit at {url}")
+    print("Keep this terminal open. Use Ctrl+C to stop.")
+    sys.argv = [
+        "streamlit",
+        "run",
+        str(app_path),
+        f"--server.address={host}",
+        f"--server.port={port}",
+        "--browser.serverAddress=127.0.0.1",
+        f"--browser.serverPort={port}",
+    ]
+    stcli.main()
+    return 0
+
+
+def cmd_serve() -> int:
+    """Start legacy Jinja web UI (local dev only)."""
+    settings = get_settings()
     _configure_logging(settings.log_level)
 
     try:
@@ -336,7 +377,6 @@ def cmd_serve() -> int:
     print(
         f"Starting legacy web UI at http://{settings.web_host}:{settings.web_port}/"
     )
-    print("Production API: use `zm api` or Railway Procfile", file=sys.stderr)
     run_server(settings)
     return 0
 
@@ -379,8 +419,9 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     sub.add_parser("data-stats", help="Show loaded restaurant counts by city")
-    sub.add_parser("api", help="Start REST API backend (Phase 5a)")
-    sub.add_parser("serve", help="Start interim Jinja web UI (legacy)")
+    sub.add_parser("api", help="Start FastAPI backend (use with Next.js frontend)")
+    sub.add_parser("streamlit", help="Start Streamlit UI (optional)")
+    sub.add_parser("serve", help="Start legacy Jinja web UI")
 
     cand = sub.add_parser(
         "candidates",
@@ -417,6 +458,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_data_stats()
     if command == "api":
         return cmd_api()
+    if command == "streamlit":
+        return cmd_streamlit()
     if command == "serve":
         return cmd_serve()
     if command == "candidates":
