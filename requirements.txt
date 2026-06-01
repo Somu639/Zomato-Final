@@ -1,4 +1,8 @@
-# Streamlit Community Cloud reads this file for pip dependencies.
-# Do not put pip requirements in packages.txt (that file is for apt system packages only).
+# Streamlit Community Cloud installs from this file (uv/pip).
+# Do not add apt packages here — use packages.txt for system deps only.
 -e .
 streamlit>=1.39,<2
+pydantic>=2.7,<3
+pydantic-settings>=2.3,<3
+huggingface_hub>=0.23,<1
+groq>=0.11,<1

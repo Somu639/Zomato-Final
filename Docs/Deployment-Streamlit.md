@@ -52,11 +52,20 @@ Open http://127.0.0.1:8501
 
 ### Secrets (required for AI rankings)
 
+In the app → **Settings** → **Secrets**:
+
 ```toml
 GROQ_API_KEY = "your-groq-key"
 ```
 
-Optional: `DATASET_CACHE_DIR`, `HF_DATASET_ID`, `GROQ_MODEL`
+### Streamlit Cloud settings
+
+| Setting | Value |
+|---------|--------|
+| **Main file** | `streamlit_app/app.py` |
+| **Python** | 3.11 (`.python-version` in repo) |
+
+The repo includes `.streamlit/config.toml` (`headless`, `0.0.0.0`) and `.streamlit/credentials.toml` (skips the email prompt). If deploy fails with **connection refused on :8501**, redeploy after pulling latest `main`.
 
 Without `GROQ_API_KEY`, recommendations use the rule-based fallback.
 
