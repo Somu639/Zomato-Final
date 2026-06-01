@@ -62,10 +62,12 @@ GROQ_API_KEY = "your-groq-key"
 
 | Setting | Value |
 |---------|--------|
-| **Main file** | `Home.py` (recommended) or `streamlit_app/app.py` |
-| **Python** | 3.11 (`.python-version` in repo) |
+| **Main file** | `Home.py` (required) |
+| **Python version** | **3.11** in Advanced settings (do not use 3.14 — repo pins `<3.14`) |
 
-The repo includes `.streamlit/config.toml` (`headless`, `0.0.0.0`) and `.streamlit/credentials.toml` (skips the email prompt). If deploy fails with **connection refused on :8501**, redeploy after pulling latest `main`.
+The repo includes `.python-version` (`3.11.9`) and `runtime.txt`. If Cloud still uses Python 3.14, set **3.11** manually under Advanced settings.
+
+**Important:** `Home.py` calls `main()` on every rerun so search results appear after you submit the form.
 
 Without `GROQ_API_KEY`, recommendations use the rule-based fallback.
 

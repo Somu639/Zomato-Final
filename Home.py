@@ -1,3 +1,6 @@
-"""Streamlit Community Cloud entry — set Main file to `Home.py` in app settings."""
+"""Streamlit Community Cloud entry — set Main file to `Home.py`."""
 
-import streamlit_app.app  # noqa: F401 — runs UI via app.main() on import
+from streamlit_app.app import main
+
+# Must call main() every rerun (importing app.py does NOT re-run main on form submit).
+main()

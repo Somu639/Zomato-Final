@@ -7,7 +7,7 @@ name = "zm-recommend"
 version = "0.1.0"
 description = "AI-powered restaurant recommendation system (Zomato use case)"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     "pydantic>=2.7,<3",
     "pydantic-settings>=2.3,<3",

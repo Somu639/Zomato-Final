@@ -331,7 +331,7 @@ def cmd_streamlit() -> int:
         )
         return 1
 
-    app_path = Path(__file__).resolve().parents[2] / "streamlit_app" / "app.py"
+    app_path = Path(__file__).resolve().parents[2] / "Home.py"
     if not app_path.is_file():
         print(f"Missing Streamlit entry: {app_path}", file=sys.stderr)
         return 1

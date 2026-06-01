@@ -1,8 +1,5 @@
 """
 ZM / Zomato-style restaurant recommendations — Streamlit (Phase 7).
-
-Streamlit Cloud executes this file as a module (not __main__), so main() must run
-unconditionally at the bottom — do not guard with if __name__ == "__main__".
 """
 
 from __future__ import annotations
@@ -120,9 +117,13 @@ def main() -> None:
             except ValueError as exc:
                 st.error(str(exc))
                 return
+            except Exception as exc:
+                st.error("Something went wrong generating recommendations.")
+                st.exception(exc)
+                return
+
+        if not outcome.engine.displays:
+            st.warning("No recommendations returned. Try relaxing your filters.")
+            return
 
         render_results(outcome)
-
-
-# Streamlit Cloud runs this script as a module — __name__ is not "__main__".
-main()
